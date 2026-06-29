@@ -91,7 +91,7 @@ export default function LoginPage() {
               </h1>
               <p className="text-gray-400 font-medium text-xs lg:text-sm leading-relaxed">
                 Chicken Farm Management admin portal — authenticates against{' '}
-                <span className="text-[#090a21] font-semibold">/api/v1/admin/auth/login</span>
+                {/* <span className="text-[#090a21] font-semibold">/api/v1/admin/auth/login</span> */}
               </p>
             </header>
 
