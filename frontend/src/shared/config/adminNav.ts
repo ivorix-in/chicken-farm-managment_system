@@ -16,7 +16,8 @@ import {
   ShoppingCart,
   Receipt,
   UserPlus,
-  TrendingUp
+  TrendingUp,
+  Truck,
 } from 'lucide-react';
 import { ROUTE_PATHS } from '../../config/routes';
 
@@ -45,6 +46,7 @@ export const ADMIN_NAV_GROUPS: readonly AdminNavGroup[] = [
       { id: 'daily-visits', label: 'Daily Visits', to: ROUTE_PATHS.ADMIN_DAILY_VISITS, Icon: ClipboardList },
       { id: 'feed', label: 'Feed Inventory', to: ROUTE_PATHS.ADMIN_FEED, Icon: Package },
       { id: 'medicines', label: 'Medicines', to: ROUTE_PATHS.ADMIN_MEDICINES, Icon: Pill },
+      { id: 'collection-reports', label: 'Collection Reports', to: ROUTE_PATHS.ADMIN_COLLECTION_REPORTS, Icon: Truck },
     ],
   },
   {
@@ -55,6 +57,7 @@ export const ADMIN_NAV_GROUPS: readonly AdminNavGroup[] = [
       { id: 'farmers', label: 'Farmers', to: ROUTE_PATHS.ADMIN_FARMERS, Icon: Users },
       { id: 'employees', label: 'Employees', to: ROUTE_PATHS.ADMIN_EMPLOYEES, Icon: UserCog },
       { id: 'areas', label: 'Areas', to: ROUTE_PATHS.ADMIN_AREAS, Icon: Map },
+      { id: 'vehicles', label: 'Vehicles', to: ROUTE_PATHS.ADMIN_VEHICLES, Icon: Truck },
     ],
   },
   {

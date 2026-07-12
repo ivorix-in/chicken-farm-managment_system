@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Activity, Users, AlertTriangle, Scale, ShoppingBag, Plus, MapPin, Calendar, CheckCircle2, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Activity, Users, AlertTriangle, Scale, ShoppingBag, Plus, MapPin, Calendar, CheckCircle2, ChevronDown, Truck, Eye, FileEdit } from 'lucide-react';
 import { fetchBatchSummary, fetchBatch, updateBatch, closeBatch } from '../api/batchesApi';
 import { fetchBatchVisits } from '../../DailyVisits/api/dailyVisitsApi';
 import { fetchFeedTransactions } from '../../Feed/api/feedApi';
+import { fetchCollectionReports } from '../../CollectionReports/api/collectionReportsApi';
 import AddLogModal from '../components/AddLogModal';
 import BatchSummaryReport from '../components/BatchSummaryReport';
 import { toast } from 'sonner';
@@ -67,7 +68,17 @@ export default function BatchTrackingPage() {
     enabled: !!id,
   });
 
-  if (loadingBatch || loadingSummary || loadingVisits || loadingFeed) {
+  const { data: collectionReports = [], isLoading: loadingCollections } = useQuery({
+    queryKey: ['batchCollections', id],
+    queryFn: () => fetchCollectionReports({ farmId: undefined, vehicleId: undefined, status: undefined }),
+    enabled: !!id,
+    select: (data) => data.filter((r) => {
+      const rBatchId = typeof r.batchId === 'object' && r.batchId ? r.batchId.id : r.batchId;
+      return rBatchId === id;
+    }),
+  });
+
+  if (loadingBatch || loadingSummary || loadingVisits || loadingFeed || loadingCollections) {
     return <div className="p-8 text-center text-gray-500">Loading batch details...</div>;
   }
 
@@ -320,6 +331,79 @@ export default function BatchTrackingPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      {/* Collection Reports Table — Full Width */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden print:hidden">
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <Truck className="text-[#00A859]" size={20} /> Collection Reports
+          </h2>
+          <Link
+            to={`/admin/collection-reports/new`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#00A859] hover:bg-[#008F4B] rounded-lg transition-all"
+          >
+            <Plus size={14} /> New Collection
+          </Link>
+        </div>
+        <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="sticky top-0 bg-gray-50">
+              <tr className="text-gray-500 font-semibold border-b border-gray-100 uppercase text-[10px] tracking-wider">
+                <th className="px-6 py-4">Date</th>
+                <th className="px-6 py-4">Vehicle</th>
+                <th className="px-6 py-4">Driver</th>
+                <th className="px-6 py-4 text-center">Boxes</th>
+                <th className="px-6 py-4 text-center">Chickens</th>
+                <th className="px-6 py-4 text-center">Net Weight (Kg)</th>
+                <th className="px-6 py-4 text-center">Avg Bird Wt</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-gray-700">
+              {collectionReports.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-6 py-8 text-center text-gray-400">No collection reports for this batch yet.</td>
+                </tr>
+              ) : (
+                collectionReports.slice().sort((a, b) => new Date(b.collectionDate).getTime() - new Date(a.collectionDate).getTime()).map((report) => (
+                  <tr key={report.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap">{new Date(report.collectionDate).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 font-mono text-xs font-semibold text-gray-700">
+                      {typeof report.vehicleId === 'object' && report.vehicleId ? report.vehicleId.vehicleNo : String(report.vehicleId).substring(0, 8)}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 font-medium">{report.driverName || '-'}</td>
+                    <td className="px-6 py-4 text-center font-semibold">{report.totalBoxes}</td>
+                    <td className="px-6 py-4 text-center font-semibold">{report.totalChickens}</td>
+                    <td className="px-6 py-4 text-center font-bold text-[#00A859]">{report.totalChickenWeight.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-center text-xs font-medium text-gray-500">{report.averageChickenWeight.toFixed(3)} kg</td>
+                    <td className="px-6 py-4">
+                      {report.status === 'SUBMITTED' ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#E6F8ED] text-[#00A859] border border-[#00A859]/20">
+                          SUBMITTED
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200">
+                          DRAFT
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Link
+                        to={`/admin/collection-reports/${report.id}/edit`}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-flex"
+                        title={report.status === 'DRAFT' ? 'Edit Report' : 'View Report'}
+                      >
+                        {report.status === 'DRAFT' ? <FileEdit size={16} /> : <Eye size={16} />}
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

@@ -15,11 +15,11 @@ export async function fetchAreas(): Promise<Area[]> {
 }
 
 export async function createArea(area: Partial<Area>): Promise<Area> {
-  const { data } = await api.post<{ data: Area }>('/api/v1/admin/areas', area);
-  return data.data;
+  const { data } = await api.post<{ area: Area }>('/api/v1/admin/areas', area);
+  return data.area;
 }
 
 export async function updateArea(id: string, area: Partial<Area>): Promise<Area> {
-  const { data } = await api.put<{ data: Area }>(`/api/v1/admin/areas/${id}`, area);
-  return data.data;
+  const { data } = await api.put<{ area: Area }>(`/api/v1/admin/areas/${id}`, area);
+  return data.area;
 }

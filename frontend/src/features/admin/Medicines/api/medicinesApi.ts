@@ -14,6 +14,6 @@ export interface Medicine {
 }
 
 export async function fetchMedicines(): Promise<Medicine[]> {
-  const { data } = await api.get<{ data: Medicine[] }>('/api/v1/admin/medicines');
-  return data.data;
+  const { data } = await api.get<{ medicines: Medicine[] }>('/api/v1/admin/medicines');
+  return data.medicines;
 }

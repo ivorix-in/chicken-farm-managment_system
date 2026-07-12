@@ -21,6 +21,8 @@ import EmployeesPage from '../Employees/pages/EmployeesPage';
 
 import AccountingPage from '../Accounting/pages/AccountingPage';
 import PnlPage from '../Accounting/pages/PnlPage';
+import CollectionReportsPage from '../CollectionReports/pages/CollectionReportsPage';
+import CollectionReportCreatePage from '../CollectionReports/pages/CollectionReportCreatePage';
 
 const COMING_SOON_ROUTES = [
   { path: 'accounts', title: 'Admin Accounts' },
@@ -67,6 +69,9 @@ export default function AdminRoutes() {
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="accounting" element={<AccountingPage />} />
           <Route path="pnl" element={<PnlPage />} />
+          <Route path="collection-reports" element={<CollectionReportsPage />} />
+          <Route path="collection-reports/new" element={<CollectionReportCreatePage />} />
+          <Route path="collection-reports/:id/edit" element={<CollectionReportCreatePage />} />
           
           {COMING_SOON_ROUTES.map(({ path, title }) => (
             <Route key={path} path={path} element={<ComingSoonPage title={title} />} />

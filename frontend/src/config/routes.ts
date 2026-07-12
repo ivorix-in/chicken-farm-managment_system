@@ -11,12 +11,14 @@ export const ROUTE_PATHS = {
   ADMIN_DAILY_VISITS: '/admin/daily-visits',
   ADMIN_FEED: '/admin/feed',
   ADMIN_MEDICINES: '/admin/medicines',
+  ADMIN_COLLECTION_REPORTS: '/admin/collection-reports',
   
   // Master Data
   ADMIN_FARMS: '/admin/farms',
   ADMIN_FARMERS: '/admin/farmers',
   ADMIN_EMPLOYEES: '/admin/employees',
   ADMIN_AREAS: '/admin/areas',
+  ADMIN_VEHICLES: '/admin/vehicles',
 
   // Accounts
   ADMIN_ACCOUNTING: '/admin/accounting',

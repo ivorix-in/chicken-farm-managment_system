@@ -15,11 +15,11 @@ export async function fetchFarmers(): Promise<Farmer[]> {
 }
 
 export async function createFarmer(farmer: Partial<Farmer>): Promise<Farmer> {
-  const { data } = await api.post<{ data: Farmer }>('/api/v1/admin/farmers', farmer);
-  return data.data;
+  const { data } = await api.post<{ farmer: Farmer }>('/api/v1/admin/farmers', farmer);
+  return data.farmer;
 }
 
 export async function updateFarmer(id: string, farmer: Partial<Farmer>): Promise<Farmer> {
-  const { data } = await api.put<{ data: Farmer }>(`/api/v1/admin/farmers/${id}`, farmer);
-  return data.data;
+  const { data } = await api.put<{ farmer: Farmer }>(`/api/v1/admin/farmers/${id}`, farmer);
+  return data.farmer;
 }

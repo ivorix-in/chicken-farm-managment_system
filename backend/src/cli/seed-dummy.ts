@@ -8,6 +8,9 @@ import { Transaction } from "../modules/accounting/models/Transaction.js";
 import { AdminUser } from "../modules/admin/models/AdminUser.js";
 import { FeedStock } from "../modules/feed/models/FeedStock.js";
 import { FeedTransaction } from "../modules/feed/models/FeedTransaction.js";
+import { Employee } from "../modules/employees/models/Employee.js";
+import { Vehicle } from "../modules/vehicles/models/Vehicle.js";
+import { CollectionReport } from "../modules/collectionReports/models/CollectionReport.js";
 
 async function seedDummyData() {
   const dbUrl = process.env.DATABASE_URL;
@@ -29,6 +32,9 @@ async function seedDummyData() {
   await Transaction.deleteMany({});
   await FeedStock.deleteMany({});
   await FeedTransaction.deleteMany({});
+  await Employee.deleteMany({});
+  await Vehicle.deleteMany({});
+  await CollectionReport.deleteMany({});
 
   console.log("Cleared existing data...");
 
@@ -284,6 +290,105 @@ async function seedDummyData() {
   ]);
 
   console.log("Seeded Feed Transactions");
+
+  // 8. Seed Employees (Supervisors, etc.)
+  await Employee.create([
+    {
+      name: "Dave Miller",
+      phone: "555-0201",
+      email: "dave.miller@farm.com",
+      department: "SUPERVISOR",
+      salary: 2500,
+      joiningDate: new Date("2026-01-15"),
+      isActive: true,
+    },
+    {
+      name: "Sarah Jenkins",
+      phone: "555-0202",
+      email: "sarah.j@farm.com",
+      department: "SUPERVISOR",
+      salary: 2600,
+      joiningDate: new Date("2026-03-01"),
+      isActive: true,
+    },
+    {
+      name: "Dr. Alice Robert",
+      phone: "555-0301",
+      email: "alice.r@farm.com",
+      department: "DOCTOR",
+      salary: 4000,
+      joiningDate: new Date("2026-02-10"),
+      isActive: true,
+    },
+  ]);
+
+  console.log("Seeded Employees");
+
+  // 9. Seed Vehicles
+  const vehicle1 = await Vehicle.create({
+    vehicleNo: "LH-8800",
+    model: "Toyota Hilux",
+    driverName: "Robert Ford",
+    isActive: true,
+  });
+  const vehicle2 = await Vehicle.create({
+    vehicleNo: "LH-9911",
+    model: "Isuzu Elf",
+    driverName: "James Carter",
+    isActive: true,
+  });
+
+  console.log("Seeded Vehicles");
+
+  // 10. Seed Collection Reports
+  const items1 = [
+    { boxNumber: 1, emptyWeight: 2.5, loadedWeight: 38.4, chickenWeight: 35.9, chickenCount: 18 },
+    { boxNumber: 2, emptyWeight: 2.5, loadedWeight: 39.2, chickenWeight: 36.7, chickenCount: 19 },
+    { boxNumber: 3, emptyWeight: 2.5, loadedWeight: 37.8, chickenWeight: 35.3, chickenCount: 17 },
+  ];
+  
+  await CollectionReport.create({
+    vehicleId: vehicle1.id,
+    farmId: farm1.id,
+    batchId: batch1.id,
+    collectionDate: new Date("2026-07-10"),
+    driverName: "Robert Ford",
+    remarks: "Morning collection, birds healthy",
+    status: "DRAFT",
+    totalBoxes: 3,
+    totalChickens: 54,
+    totalEmptyWeight: 7.5,
+    totalLoadedWeight: 115.4,
+    totalChickenWeight: 107.9,
+    averageChickenWeight: 1.998,
+    createdBy: adminId,
+    items: items1,
+  });
+
+  const items2 = [
+    { boxNumber: 1, emptyWeight: 2.5, loadedWeight: 37.2, chickenWeight: 34.7, chickenCount: 16 },
+    { boxNumber: 2, emptyWeight: 2.5, loadedWeight: 36.8, chickenWeight: 34.3, chickenCount: 16 },
+  ];
+
+  await CollectionReport.create({
+    vehicleId: vehicle2.id,
+    farmId: farm2.id,
+    batchId: batch2.id,
+    collectionDate: new Date("2026-07-11"),
+    driverName: "James Carter",
+    remarks: "Afternoon collection, high average weight",
+    status: "SUBMITTED",
+    totalBoxes: 2,
+    totalChickens: 32,
+    totalEmptyWeight: 5.0,
+    totalLoadedWeight: 74.0,
+    totalChickenWeight: 69.0,
+    averageChickenWeight: 2.156,
+    createdBy: adminId,
+    items: items2,
+  });
+
+  console.log("Seeded Collection Reports");
   console.log("Dummy data seeding complete!");
 }
 

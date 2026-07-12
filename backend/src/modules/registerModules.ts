@@ -12,10 +12,12 @@ import { registerFeedRoutes } from "./feed/feed.routes.js";
 import { registerMedicinesRoutes } from "./medicines/medicines.routes.js";
 import { registerDashboardRoutes } from "./dashboard/dashboard.routes.js";
 import { registerAccountingRoutes } from "./accounting/accounting.routes.js";
+import { registerVehiclesRoutes } from "./vehicles/vehicles.routes.js";
+import { registerCollectionReportsRoutes } from "./collectionReports/collectionReports.routes.js";
 
 const ERP_BASE = "/api/v1/admin";
 
-/** Mount all bounded-context modules (modular monolith composition root). */
+/** Mount all bounded-context modules (modular monolith composition composition root). */
 export function registerModules(app: Express, env: Env): void {
   // Existing modules
   registerAdminModule(app, env);
@@ -32,4 +34,6 @@ export function registerModules(app: Express, env: Env): void {
   registerMedicinesRoutes(app, env, ERP_BASE);
   registerDashboardRoutes(app, env, ERP_BASE);
   registerAccountingRoutes(app, env, ERP_BASE);
+  registerVehiclesRoutes(app, env, ERP_BASE);
+  registerCollectionReportsRoutes(app, env, ERP_BASE);
 }

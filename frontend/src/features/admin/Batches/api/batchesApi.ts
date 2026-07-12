@@ -15,8 +15,8 @@ export interface Batch {
   createdAt: string;
 }
 
-export async function fetchBatches(): Promise<Batch[]> {
-  const { data } = await api.get<{ batches: Batch[] }>('/api/v1/admin/batches');
+export async function fetchBatches(filters?: { farmId?: string; status?: string }): Promise<Batch[]> {
+  const { data } = await api.get<{ batches: Batch[] }>('/api/v1/admin/batches', { params: filters });
   return data.batches;
 }
 

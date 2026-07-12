@@ -12,16 +12,16 @@ export interface Employee {
 }
 
 export async function fetchEmployees(): Promise<Employee[]> {
-  const { data } = await api.get<{ data: Employee[] }>('/api/v1/admin/employees');
-  return data.data;
+  const { data } = await api.get<{ employees: Employee[] }>('/api/v1/admin/employees');
+  return data.employees;
 }
 
 export async function createEmployee(employee: Partial<Employee>): Promise<Employee> {
-  const { data } = await api.post<{ data: Employee }>('/api/v1/admin/employees', employee);
-  return data.data;
+  const { data } = await api.post<{ employee: Employee }>('/api/v1/admin/employees', employee);
+  return data.employee;
 }
 
 export async function updateEmployee(id: string, employee: Partial<Employee>): Promise<Employee> {
-  const { data } = await api.put<{ data: Employee }>(`/api/v1/admin/employees/${id}`, employee);
-  return data.data;
+  const { data } = await api.put<{ employee: Employee }>(`/api/v1/admin/employees/${id}`, employee);
+  return data.employee;
 }
