@@ -11,6 +11,7 @@ import { registerDailyVisitsRoutes } from "./dailyVisits/dailyVisits.routes.js";
 import { registerFeedRoutes } from "./feed/feed.routes.js";
 import { registerMedicinesRoutes } from "./medicines/medicines.routes.js";
 import { registerDashboardRoutes } from "./dashboard/dashboard.routes.js";
+import { registerAccountingRoutes } from "./accounting/accounting.routes.js";
 
 const ERP_BASE = "/api/v1/admin";
 
@@ -30,4 +31,5 @@ export function registerModules(app: Express, env: Env): void {
   registerFeedRoutes(app, env, ERP_BASE);
   registerMedicinesRoutes(app, env, ERP_BASE);
   registerDashboardRoutes(app, env, ERP_BASE);
+  registerAccountingRoutes(app, env, ERP_BASE);
 }
