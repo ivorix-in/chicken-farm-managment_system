@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Search, Activity, MoreVertical, Eye, Lock } from 'lucide-react';
 import { fetchBatches } from '../api/batchesApi';
+import { Link } from 'react-router-dom';
+import BatchCreateModal from '../components/BatchCreateModal';
 
 export default function BatchesPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: batches = [], isLoading } = useQuery({
     queryKey: ['batches'],
     queryFn: fetchBatches,
@@ -22,7 +25,10 @@ export default function BatchesPage() {
           </p>
         </div>
         
-        <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all"
+        >
           <Plus size={16} />
           Start New Batch
         </button>
@@ -76,7 +82,9 @@ export default function BatchesPage() {
                 batches.map((batch) => (
                   <tr key={batch.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 font-bold text-gray-900">{batch.batchNo}</td>
-                    <td className="px-6 py-4 text-gray-600 font-medium">Farm {batch.farmId.substring(0, 8)}...</td>
+                    <td className="px-6 py-4 text-gray-600 font-medium">
+                      Farm {typeof batch.farmId === 'object' && batch.farmId ? (batch.farmId as any).name : String(batch.farmId).substring(0, 8)}
+                    </td>
                     <td className="px-6 py-4">
                       {batch.status === 'ACTIVE' ? (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#E6F8ED] text-[#00A859] border border-[#00A859]/20">
@@ -88,13 +96,13 @@ export default function BatchesPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-gray-500 font-medium">{new Date(batch.startDate).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-gray-500 font-medium">{batch.startDate || (batch as any).placementDate ? new Date(batch.startDate || (batch as any).placementDate).toLocaleDateString() : 'N/A'}</td>
                     <td className="px-6 py-4 font-semibold text-gray-700">{batch.chickPurchase?.quantity?.toLocaleString() || 'N/A'}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Summary">
+                        <Link to={`/admin/batches/${batch.id}/track`} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Track Batch">
                           <Eye size={16} />
-                        </button>
+                        </Link>
                         {batch.status === 'ACTIVE' && (
                           <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Close Batch">
                             <Lock size={16} />
@@ -109,6 +117,7 @@ export default function BatchesPage() {
           </table>
         </div>
       </div>
+      {isModalOpen && <BatchCreateModal onClose={() => setIsModalOpen(false)} />}
     </div>
   );
 }

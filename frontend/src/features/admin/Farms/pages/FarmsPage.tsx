@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Search, Home, Edit2 } from 'lucide-react';
 import { fetchFarms } from '../api/farmsApi';
+import FarmCreateModal from '../components/FarmCreateModal';
 
 export default function FarmsPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: farms = [], isLoading } = useQuery({
     queryKey: ['farms'],
     queryFn: fetchFarms,
@@ -22,7 +24,10 @@ export default function FarmsPage() {
           </p>
         </div>
         
-        <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all"
+        >
           <Plus size={16} />
           Add Farm
         </button>
@@ -69,7 +74,9 @@ export default function FarmsPage() {
                 farms.map((farm) => (
                   <tr key={farm.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 font-bold text-gray-900">{farm.id.substring(0, 8)}...</td>
-                    <td className="px-6 py-4 text-gray-600 font-medium">{farm.farmerId.substring(0, 8)}...</td>
+                    <td className="px-6 py-4 text-gray-600 font-medium">
+                      {typeof farm.farmerId === 'object' && farm.farmerId ? (farm.farmerId as any).name : String(farm.farmerId).substring(0, 8)}
+                    </td>
                     <td className="px-6 py-4 text-gray-600 font-medium">{farm.capacity.toLocaleString()} birds</td>
                     <td className="px-6 py-4">
                       {farm.status === 'ACTIVE' ? (
@@ -97,6 +104,7 @@ export default function FarmsPage() {
           </table>
         </div>
       </div>
+      {isModalOpen && <FarmCreateModal onClose={() => setIsModalOpen(false)} />}
     </div>
   );
 }

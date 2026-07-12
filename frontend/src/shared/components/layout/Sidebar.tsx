@@ -58,56 +58,65 @@ export default function Sidebar({ onClose, collapsed }: SidebarProps) {
 
       {/* Nav Menu */}
       <nav
-        className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1"
+        className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-6"
         aria-label="Admin navigation"
       >
-        {ADMIN_NAV_GROUPS[0].items.map((item) => {
-          const Icon = item.Icon;
-          const isExact = item.to === ROUTE_PATHS.ADMIN_DASHBOARD;
-          const active = pathname === item.to || (item.to !== ROUTE_PATHS.ADMIN_DASHBOARD && pathname.startsWith(item.to));
+        {ADMIN_NAV_GROUPS.map((group) => (
+          <div key={group.id} className="space-y-1">
+            {!collapsed && (
+              <h3 className="px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                {group.title}
+              </h3>
+            )}
+            {group.items.map((item) => {
+              const Icon = item.Icon;
+              const isExact = item.to === ROUTE_PATHS.ADMIN_DASHBOARD;
+              const active = pathname === item.to || (item.to !== ROUTE_PATHS.ADMIN_DASHBOARD && pathname.startsWith(item.to));
 
-          return (
-            <div key={item.id}>
-              <NavLink
-                to={item.to}
-                end={isExact}
-                title={item.label}
-                onClick={() => {
-                  if (window.innerWidth < 1024) onClose();
-                }}
-                className={({ isActive }) => {
-                  const currentActive = isActive || active;
-                  return [
-                    'flex items-center gap-3 rounded-xl py-2.5 px-4 text-[13px] outline-none transition-all duration-200',
-                    collapsed ? 'lg:justify-center lg:px-2 lg:gap-0' : '',
-                    currentActive
-                      ? 'bg-[#E6F8ED] text-[#00A859] font-semibold shadow-sm shadow-[#00A859]/5'
-                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50',
-                  ].join(' ');
-                }}
-              >
-                {({ isActive }) => {
-                  const currentActive = isActive || active;
-                  return (
-                    <>
-                      <Icon
-                        size={17}
-                        strokeWidth={currentActive ? 2.25 : 1.75}
-                        className={`shrink-0 ${currentActive ? 'text-[#00A859]' : 'text-gray-400'}`}
-                        aria-hidden
-                      />
-                      <span
-                        className={`truncate flex-1 min-w-0 ${collapsed ? 'lg:sr-only' : ''}`}
-                      >
-                        {item.label}
-                      </span>
-                    </>
-                  );
-                }}
-              </NavLink>
-            </div>
-          );
-        })}
+              return (
+                <div key={item.id}>
+                  <NavLink
+                    to={item.to}
+                    end={isExact}
+                    title={item.label}
+                    onClick={() => {
+                      if (window.innerWidth < 1024) onClose();
+                    }}
+                    className={({ isActive }) => {
+                      const currentActive = isActive || active;
+                      return [
+                        'flex items-center gap-3 rounded-xl py-2.5 px-4 text-[13px] outline-none transition-all duration-200',
+                        collapsed ? 'lg:justify-center lg:px-2 lg:gap-0' : '',
+                        currentActive
+                          ? 'bg-[#E6F8ED] text-[#00A859] font-semibold shadow-sm shadow-[#00A859]/5'
+                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50',
+                      ].join(' ');
+                    }}
+                  >
+                    {({ isActive }) => {
+                      const currentActive = isActive || active;
+                      return (
+                        <>
+                          <Icon
+                            size={17}
+                            strokeWidth={currentActive ? 2.25 : 1.75}
+                            className={`shrink-0 ${currentActive ? 'text-[#00A859]' : 'text-gray-400'}`}
+                            aria-hidden
+                          />
+                          <span
+                            className={`truncate flex-1 min-w-0 ${collapsed ? 'lg:sr-only' : ''}`}
+                          >
+                            {item.label}
+                          </span>
+                        </>
+                      );
+                    }}
+                  </NavLink>
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Sidebar Footer / Log out */}

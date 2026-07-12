@@ -15,9 +15,18 @@ export const ROUTE_PATHS = {
   // Master Data
   ADMIN_FARMS: '/admin/farms',
   ADMIN_FARMERS: '/admin/farmers',
+  ADMIN_EMPLOYEES: '/admin/employees',
   ADMIN_AREAS: '/admin/areas',
 
+  // Accounts
+  ADMIN_ACCOUNTING: '/admin/accounting',
+  ADMIN_PURCHASES: '/admin/purchases',
+  ADMIN_SALES: '/admin/sales',
+  ADMIN_EXPENSES: '/admin/expenses',
+  ADMIN_PNL: '/admin/pnl',
+
   // RBAC & System
+  ADMIN_ACCOUNTS: '/admin/accounts',
   ADMIN_ROLES: '/admin/roles',
   ADMIN_ROLE_CREATE: '/admin/roles/new',
   ADMIN_ROLE_EDIT_BASE: '/admin/roles',

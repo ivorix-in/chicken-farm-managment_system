@@ -10,8 +10,8 @@ export interface Farmer {
 }
 
 export async function fetchFarmers(): Promise<Farmer[]> {
-  const { data } = await api.get<{ data: Farmer[] }>('/api/v1/admin/farmers');
-  return data.data;
+  const { data } = await api.get<{ farmers: Farmer[] }>('/api/v1/admin/farmers');
+  return data.farmers;
 }
 
 export async function createFarmer(farmer: Partial<Farmer>): Promise<Farmer> {

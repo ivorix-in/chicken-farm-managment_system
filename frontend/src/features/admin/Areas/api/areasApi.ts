@@ -10,8 +10,8 @@ export interface Area {
 }
 
 export async function fetchAreas(): Promise<Area[]> {
-  const { data } = await api.get<{ data: Area[] }>('/api/v1/admin/areas');
-  return data.data;
+  const { data } = await api.get<{ areas: Area[] }>('/api/v1/admin/areas');
+  return data.areas;
 }
 
 export async function createArea(area: Partial<Area>): Promise<Area> {

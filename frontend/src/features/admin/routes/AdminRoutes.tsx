@@ -10,6 +10,7 @@ import ComingSoonPage from '../System/pages/ComingSoonPage';
 import { AuthGuard, RequirePermission } from '../Auth/guards';
 
 import BatchesPage from '../Batches/pages/BatchesPage';
+import BatchTrackingPage from '../Batches/pages/BatchTrackingPage';
 import DailyVisitsPage from '../DailyVisits/pages/DailyVisitsPage';
 import FeedPage from '../Feed/pages/FeedPage';
 import MedicinesPage from '../Medicines/pages/MedicinesPage';
@@ -18,7 +19,14 @@ import FarmersPage from '../Farmers/pages/FarmersPage';
 import FarmsPage from '../Farms/pages/FarmsPage';
 import EmployeesPage from '../Employees/pages/EmployeesPage';
 
+import AccountingPage from '../Accounting/pages/AccountingPage';
+import PnlPage from '../Accounting/pages/PnlPage';
+
 const COMING_SOON_ROUTES = [
+  { path: 'accounts', title: 'Admin Accounts' },
+  { path: 'purchases', title: 'Purchases' },
+  { path: 'sales', title: 'Sales' },
+  { path: 'expenses', title: 'Expenses' },
   { path: 'settings', title: 'Settings' },
 ] as const;
 
@@ -49,6 +57,7 @@ export default function AdminRoutes() {
           </Route>
           
           <Route path="batches" element={<BatchesPage />} />
+          <Route path="batches/:id/track" element={<BatchTrackingPage />} />
           <Route path="daily-visits" element={<DailyVisitsPage />} />
           <Route path="feed" element={<FeedPage />} />
           <Route path="medicines" element={<MedicinesPage />} />
@@ -56,6 +65,8 @@ export default function AdminRoutes() {
           <Route path="farmers" element={<FarmersPage />} />
           <Route path="farms" element={<FarmsPage />} />
           <Route path="employees" element={<EmployeesPage />} />
+          <Route path="accounting" element={<AccountingPage />} />
+          <Route path="pnl" element={<PnlPage />} />
           
           {COMING_SOON_ROUTES.map(({ path, title }) => (
             <Route key={path} path={path} element={<ComingSoonPage title={title} />} />
@@ -70,3 +81,5 @@ export default function AdminRoutes() {
     </Routes>
   );
 }
+
+// HMR trigger
