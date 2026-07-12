@@ -4,8 +4,12 @@ export const createVisitBody = z.object({
   batchId: z.string().uuid(),
   visitDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   mortalityToday: z.number().int().min(0),
+  cullsToday: z.number().int().min(0).default(0),
+  weakBirdsToday: z.number().int().min(0).default(0),
+  ownUseToday: z.number().int().min(0).default(0),
   approxWeightKg: z.number().min(0),
   feedUsedKg: z.number().min(0),
+  feedBagsUsed: z.number().int().min(0).default(0),
   remarks: z.string().max(1000).optional(),
   notifyDoctor: z.boolean().optional(),
 });

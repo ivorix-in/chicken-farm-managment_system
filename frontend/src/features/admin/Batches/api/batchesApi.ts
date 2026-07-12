@@ -4,7 +4,7 @@ export interface Batch {
   id: string;
   batchNo: string;
   farmId: string;
-  status: 'ACTIVE' | 'CLOSED';
+  status: 'PROGRESS' | 'COMPLETED' | 'CLOSED';
   startDate: string;
   chickPurchase?: {
     supplier: string;
@@ -49,6 +49,11 @@ export interface BatchSummary {
   chickCount: number;
   currentBirdCount: number;
   totalMortality: number;
+  totalCulls: number;
+  totalWeakBirds: number;
+  totalOwnUse: number;
+  soldBirds: number;
+  totalKgsSold: number;
   currentAgeDays: number;
   averageWeightKg: number;
   totalFeedUsedKg: number;
@@ -63,4 +68,14 @@ export async function fetchBatchSummary(id: string): Promise<BatchSummary> {
 export async function fetchBatch(id: string): Promise<Batch> {
   const { data } = await api.get<{ batch: Batch }>(`/api/v1/admin/batches/${id}`);
   return data.batch;
+}
+
+export async function updateBatch(id: string, payload: Partial<{ status: 'PROGRESS' | 'COMPLETED' | 'CLOSED'; notes?: string | null; expectedClosureDate?: string; soldBirds?: number; totalKgsSold?: number }>): Promise<Batch> {
+  const { data } = await api.put<{ batch: Batch }>(`/api/v1/admin/batches/${id}`, payload);
+  return data.batch;
+}
+
+export async function closeBatch(id: string): Promise<{ message: string }> {
+  const { data } = await api.post<{ message: string }>(`/api/v1/admin/batches/${id}/close`);
+  return data;
 }

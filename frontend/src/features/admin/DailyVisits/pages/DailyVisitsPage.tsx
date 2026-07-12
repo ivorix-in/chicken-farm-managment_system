@@ -71,11 +71,11 @@ export default function DailyVisitsPage() {
                   <tr key={visit.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 font-bold text-gray-900">{visit.batchId.substring(0, 8)}...</td>
                     <td className="px-6 py-4 text-gray-500 font-medium">
-                      {new Date(visit.visitedAt).toLocaleDateString()}
+                      {new Date(visit.visitDate).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-center font-bold text-red-500">{visit.mortalityToday}</td>
-                    <td className="px-6 py-4 text-center font-semibold text-gray-700">{visit.feedUsed || '-'}</td>
-                    <td className="px-6 py-4 text-center font-semibold text-gray-700">{visit.approxWeight || '-'}</td>
+                    <td className="px-6 py-4 text-center font-semibold text-gray-700">{visit.feedUsedKg ?? '-'}</td>
+                    <td className="px-6 py-4 text-center font-semibold text-gray-700">{visit.approxWeightKg ?? '-'}</td>
                     <td className="px-6 py-4 text-gray-500 font-medium">{visit.supervisorId.substring(0, 8)}</td>
                     <td className="px-6 py-4 text-right">
                       <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details">

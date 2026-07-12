@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 import crypto from "crypto";
 import { applyGlobalOptions } from "../../../core/db.js";
 
-export type BatchStatus = "PLACED" | "ACTIVE" | "COLLECTION" | "CLOSED";
+export type BatchStatus = "PROGRESS" | "COMPLETED" | "CLOSED";
 
 export interface IChickPurchase {
   supplierId?: string | null;
@@ -21,11 +21,17 @@ export interface IBatch {
   chickCount: number;
   currentBirdCount: number;
   totalMortality: number;
+  totalCulls: number;
+  totalWeakBirds: number;
+  totalOwnUse: number;
+  soldBirds: number;
+  totalKgsSold: number;
   placementDate: Date;
   expectedClosureDate?: Date | null;
   status: BatchStatus;
   closedAt?: Date | null;
   notes?: string | null;
+  managerRemarks?: string | null;
   createdBy: string;
   chickPurchase?: IChickPurchase | null;
   createdAt: Date;
@@ -52,17 +58,23 @@ const BatchSchema = new Schema<IBatch>(
     chickCount: { type: Number, required: true, min: 1 },
     currentBirdCount: { type: Number, required: true, min: 0 },
     totalMortality: { type: Number, required: true, default: 0 },
+    totalCulls: { type: Number, required: true, default: 0 },
+    totalWeakBirds: { type: Number, required: true, default: 0 },
+    totalOwnUse: { type: Number, required: true, default: 0 },
+    soldBirds: { type: Number, required: true, default: 0 },
+    totalKgsSold: { type: Number, required: true, default: 0 },
     placementDate: { type: Date, required: true },
     expectedClosureDate: { type: Date, default: null },
     status: {
       type: String,
-      enum: ["PLACED", "ACTIVE", "COLLECTION", "CLOSED"],
+      enum: ["PROGRESS", "COMPLETED", "CLOSED"],
       required: true,
-      default: "PLACED",
+      default: "PROGRESS",
       index: true,
     },
     closedAt: { type: Date, default: null },
     notes: { type: String, default: null },
+    managerRemarks: { type: String, default: null },
     createdBy: { type: String, required: true, ref: "AdminUser" },
     chickPurchase: { type: ChickPurchaseSchema, default: null },
   },

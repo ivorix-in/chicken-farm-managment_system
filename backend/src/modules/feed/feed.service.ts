@@ -24,7 +24,7 @@ export async function setFeedStock(input: { feedType: FeedType; quantityKg: numb
 }
 
 export async function createFeedTransaction(
-  input: { batchId?: string; feedStockId: string; quantityKg: number; type: FeedTransactionType; notes?: string },
+  input: { batchId?: string; feedStockId: string; quantityKg: number; numberOfBags?: number; type: FeedTransactionType; category?: string; notes?: string },
   actorId: string,
   ip?: string
 ) {
@@ -50,7 +50,9 @@ export async function createFeedTransaction(
     batchId: input.batchId ?? null,
     feedStockId: input.feedStockId,
     quantityKg: input.quantityKg,
+    numberOfBags: input.numberOfBags ?? 0,
     type: input.type,
+    category: input.category as any ?? null,
     issuedBy: actorId,
     issuedAt: new Date(),
     notes: input.notes?.trim() ?? null,

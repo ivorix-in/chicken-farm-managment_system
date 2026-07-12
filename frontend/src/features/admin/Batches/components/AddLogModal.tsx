@@ -14,8 +14,12 @@ export default function AddLogModal({ batchId, onClose }: AddLogModalProps) {
   const [formData, setFormData] = useState({
     visitDate: new Date().toISOString().split('T')[0],
     mortalityToday: 0,
+    cullsToday: 0,
+    weakBirdsToday: 0,
+    ownUseToday: 0,
     approxWeightKg: 0,
     feedUsedKg: 0,
+    feedBagsUsed: 0,
     remarks: '',
   });
 
@@ -38,8 +42,12 @@ export default function AddLogModal({ batchId, onClose }: AddLogModalProps) {
       batchId,
       visitDate: formData.visitDate,
       mortalityToday: Number(formData.mortalityToday),
+      cullsToday: Number(formData.cullsToday),
+      weakBirdsToday: Number(formData.weakBirdsToday),
+      ownUseToday: Number(formData.ownUseToday),
       approxWeightKg: Number(formData.approxWeightKg),
       feedUsedKg: Number(formData.feedUsedKg),
+      feedBagsUsed: Number(formData.feedBagsUsed),
       remarks: formData.remarks,
     });
   };
@@ -74,9 +82,9 @@ export default function AddLogModal({ batchId, onClose }: AddLogModalProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Mortality Today</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Mortality Today</label>
               <input
                 type="number"
                 min="0"
@@ -87,7 +95,66 @@ export default function AddLogModal({ batchId, onClose }: AddLogModalProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Avg Weight (kg)</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Culls</label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={formData.cullsToday}
+                onChange={(e) => setFormData({ ...formData, cullsToday: Number(e.target.value) })}
+                className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00A859]/20 focus:border-[#00A859]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Weak Birds</label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={formData.weakBirdsToday}
+                onChange={(e) => setFormData({ ...formData, weakBirdsToday: Number(e.target.value) })}
+                className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00A859]/20 focus:border-[#00A859]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Own Use</label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={formData.ownUseToday}
+                onChange={(e) => setFormData({ ...formData, ownUseToday: Number(e.target.value) })}
+                className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00A859]/20 focus:border-[#00A859]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Feed Used (kg)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                required
+                value={formData.feedUsedKg}
+                onChange={(e) => setFormData({ ...formData, feedUsedKg: Number(e.target.value) })}
+                className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00A859]/20 focus:border-[#00A859]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Feed Bags Used</label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={formData.feedBagsUsed}
+                onChange={(e) => setFormData({ ...formData, feedBagsUsed: Number(e.target.value) })}
+                className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00A859]/20 focus:border-[#00A859]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Avg Weight (kg)</label>
               <input
                 type="number"
                 step="0.01"
@@ -98,19 +165,6 @@ export default function AddLogModal({ batchId, onClose }: AddLogModalProps) {
                 className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00A859]/20 focus:border-[#00A859]"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Feed Used (kg)</label>
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              required
-              value={formData.feedUsedKg}
-              onChange={(e) => setFormData({ ...formData, feedUsedKg: Number(e.target.value) })}
-              className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00A859]/20 focus:border-[#00A859]"
-            />
           </div>
 
           <div>

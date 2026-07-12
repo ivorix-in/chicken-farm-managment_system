@@ -6,6 +6,8 @@ import { Farm } from "../modules/farms/models/Farm.js";
 import { Batch } from "../modules/batches/models/Batch.js";
 import { Transaction } from "../modules/accounting/models/Transaction.js";
 import { AdminUser } from "../modules/admin/models/AdminUser.js";
+import { FeedStock } from "../modules/feed/models/FeedStock.js";
+import { FeedTransaction } from "../modules/feed/models/FeedTransaction.js";
 
 async function seedDummyData() {
   const dbUrl = process.env.DATABASE_URL;
@@ -25,6 +27,8 @@ async function seedDummyData() {
   await Farm.deleteMany({});
   await Batch.deleteMany({});
   await Transaction.deleteMany({});
+  await FeedStock.deleteMany({});
+  await FeedTransaction.deleteMany({});
 
   console.log("Cleared existing data...");
 
@@ -75,7 +79,7 @@ async function seedDummyData() {
     chickCount: 5000,
     currentBirdCount: 5000,
     placementDate: new Date("2026-06-01"),
-    status: "ACTIVE",
+    status: "PROGRESS",
     createdBy: adminId,
   });
   const batch2 = await Batch.create({
@@ -84,7 +88,7 @@ async function seedDummyData() {
     chickCount: 8000,
     currentBirdCount: 8000,
     placementDate: new Date("2026-06-15"),
-    status: "ACTIVE",
+    status: "PROGRESS",
     createdBy: adminId,
   });
 
@@ -180,6 +184,106 @@ async function seedDummyData() {
   ]);
 
   console.log("Seeded Transactions (Accounting & P&L)");
+
+  // 6. Seed Feed Stocks
+  const stockStarter = await FeedStock.create({
+    feedType: "STARTER",
+    quantityKg: 8500,
+    unitCostPerKg: 1.25,
+    lowStockThresholdKg: 2000,
+  });
+  const stockGrower = await FeedStock.create({
+    feedType: "GROWER",
+    quantityKg: 12000,
+    unitCostPerKg: 1.15,
+    lowStockThresholdKg: 3000,
+  });
+  await FeedStock.create({
+    feedType: "FINISHER",
+    quantityKg: 1500,
+    unitCostPerKg: 1.10,
+    lowStockThresholdKg: 2000,
+  });
+  await FeedStock.create({
+    feedType: "PRE_STARTER",
+    quantityKg: 5000,
+    unitCostPerKg: 1.35,
+    lowStockThresholdKg: 1500,
+  });
+
+  console.log("Seeded Feed Stocks");
+
+  // 7. Seed Feed Transactions
+  await FeedTransaction.create([
+    {
+      batchId: batch1.id,
+      feedStockId: stockStarter.id,
+      quantityKg: 3000,
+      numberOfBags: 60,
+      type: "ISSUE",
+      category: "GODOWN",
+      issuedBy: adminId,
+      issuedAt: new Date("2026-06-05"),
+      notes: "Initial starter feed delivery",
+    },
+    {
+      batchId: batch1.id,
+      feedStockId: stockGrower.id,
+      quantityKg: 2000,
+      numberOfBags: 40,
+      type: "ISSUE",
+      category: "TMS_IN",
+      issuedBy: adminId,
+      issuedAt: new Date("2026-06-12"),
+      notes: "Grower feed delivery via TMS",
+    },
+    {
+      batchId: batch1.id,
+      feedStockId: stockStarter.id,
+      quantityKg: 200,
+      numberOfBags: 4,
+      type: "RETURN",
+      category: "RETURN",
+      issuedBy: adminId,
+      issuedAt: new Date("2026-06-20"),
+      notes: "Returned unused starter feed",
+    },
+    {
+      batchId: batch1.id,
+      feedStockId: stockGrower.id,
+      quantityKg: 300,
+      numberOfBags: 6,
+      type: "ISSUE",
+      category: "TRANSFER_OUT",
+      issuedBy: adminId,
+      issuedAt: new Date("2026-06-25"),
+      notes: "Transferred grower feed to farm 2",
+    },
+    {
+      batchId: batch2.id,
+      feedStockId: stockStarter.id,
+      quantityKg: 4500,
+      numberOfBags: 90,
+      type: "ISSUE",
+      category: "GODOWN",
+      issuedBy: adminId,
+      issuedAt: new Date("2026-06-18"),
+      notes: "Starter feed for batch 2",
+    },
+    {
+      batchId: batch2.id,
+      feedStockId: stockGrower.id,
+      quantityKg: 3500,
+      numberOfBags: 70,
+      type: "ISSUE",
+      category: "TMS_IN",
+      issuedBy: adminId,
+      issuedAt: new Date("2026-06-25"),
+      notes: "Grower feed for batch 2",
+    },
+  ]);
+
+  console.log("Seeded Feed Transactions");
   console.log("Dummy data seeding complete!");
 }
 

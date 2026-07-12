@@ -1,15 +1,47 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Activity, Users, AlertTriangle, Scale, ShoppingBag, Plus, MapPin, Calendar, CheckCircle2 } from 'lucide-react';
-import { fetchBatchSummary, fetchBatch } from '../api/batchesApi';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Activity, Users, AlertTriangle, Scale, ShoppingBag, Plus, MapPin, Calendar, CheckCircle2, ChevronDown } from 'lucide-react';
+import { fetchBatchSummary, fetchBatch, updateBatch, closeBatch } from '../api/batchesApi';
 import { fetchBatchVisits } from '../../DailyVisits/api/dailyVisitsApi';
 import { fetchFeedTransactions } from '../../Feed/api/feedApi';
 import AddLogModal from '../components/AddLogModal';
+import BatchSummaryReport from '../components/BatchSummaryReport';
+import { toast } from 'sonner';
 
 export default function BatchTrackingPage() {
   const { id } = useParams<{ id: string }>();
   const [isAddLogOpen, setIsAddLogOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const statusMutation = useMutation({
+    mutationFn: async (newStatus: 'PROGRESS' | 'COMPLETED' | 'CLOSED') => {
+      if (newStatus === 'CLOSED') {
+        return closeBatch(id!);
+      } else {
+        return updateBatch(id!, { status: newStatus });
+      }
+    },
+    onSuccess: () => {
+      toast.success('Batch status updated successfully');
+      void queryClient.invalidateQueries({ queryKey: ['batch', id] });
+      void queryClient.invalidateQueries({ queryKey: ['batchSummary', id] });
+    },
+    onError: (error: any) => {
+      const msg = error.response?.data?.message || 'Failed to update batch status';
+      toast.error(msg);
+    },
+  });
+
+  const handleStatusChange = (newStatus: 'PROGRESS' | 'COMPLETED' | 'CLOSED') => {
+    if (newStatus === 'CLOSED') {
+      if (window.confirm('Are you sure you want to CLOSE this batch? This action is permanent and will lock all batch data.')) {
+        statusMutation.mutate(newStatus);
+      }
+    } else {
+      statusMutation.mutate(newStatus);
+    }
+  };
 
   const { data: batch, isLoading: loadingBatch } = useQuery({
     queryKey: ['batch', id],
@@ -47,9 +79,9 @@ export default function BatchTrackingPage() {
   const progressPercent = Math.min((summary.currentAgeDays / TARGET_DAYS) * 100, 100);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 print:space-y-0">
       {/* Header with Farm Details */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm print:hidden">
         <div className="flex items-start gap-4">
           <Link to="/admin/batches" className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 mt-1">
             <ArrowLeft size={20} />
@@ -57,9 +89,31 @@ export default function BatchTrackingPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Batch {summary.batchNo}</h1>
-              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${summary.status === 'ACTIVE' || summary.status === 'PLACED' ? 'bg-[#E6F8ED] text-[#00A859] border-[#00A859]/20' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                {summary.status}
-              </span>
+              <div className="relative">
+                <select
+                  value={summary.status}
+                  onChange={(e) => handleStatusChange(e.target.value as any)}
+                  disabled={summary.status === 'CLOSED'}
+                  className={`px-3.5 py-1.5 pr-8 rounded-full text-[10px] font-bold border appearance-none cursor-pointer focus:outline-none transition-all ${
+                    summary.status === 'PROGRESS'
+                      ? 'bg-[#E6F8ED] text-[#00A859] border-[#00A859]/20'
+                      : summary.status === 'COMPLETED'
+                      ? 'bg-[#FFF9E6] text-[#D48800] border-[#D48800]/20'
+                      : 'bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed'
+                  }`}
+                >
+                  <option value="PROGRESS">PROGRESS</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                  <option value="CLOSED">CLOSED</option>
+                </select>
+                {summary.status !== 'CLOSED' && (
+                  <ChevronDown className={`absolute right-2.5 top-1/2 -translate-y-1/2 size-3 pointer-events-none ${
+                    summary.status === 'PROGRESS'
+                      ? 'text-[#00A859]'
+                      : 'text-[#D48800]'
+                  }`} />
+                )}
+              </div>
             </div>
             
             <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-gray-500">
@@ -78,17 +132,18 @@ export default function BatchTrackingPage() {
             </div>
           </div>
         </div>
-        
-        <button
-          onClick={() => setIsAddLogOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all whitespace-nowrap"
-        >
-          <Plus size={16} />
-          Add Daily Log
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsAddLogOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all whitespace-nowrap"
+          >
+            <Plus size={16} />
+            Add Daily Log
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:hidden">
         {/* Farm & Batch Profile Card */}
         <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
           <div>
@@ -140,7 +195,7 @@ export default function BatchTrackingPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Users size={20} /></div>
           <div>
@@ -174,7 +229,15 @@ export default function BatchTrackingPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Batch Summary Report inline */}
+      <BatchSummaryReport
+        batch={batch as any}
+        summary={summary}
+        visits={visits}
+        feedTransactions={feedTransactions}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:hidden">
         {/* Detailed Logs Table */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
           <div className="p-6 border-b border-gray-100">

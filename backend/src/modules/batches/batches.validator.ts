@@ -20,14 +20,14 @@ export const createBatchBody = z.object({
 });
 
 export const updateBatchBody = z.object({
-  status: z.enum(["PLACED", "ACTIVE", "COLLECTION"]).optional(),
+  status: z.enum(["PROGRESS", "COMPLETED"]).optional(),
   notes: z.string().max(1000).nullable().optional(),
   expectedClosureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 export const listBatchesQuery = z.object({
   farmId: z.string().uuid().optional(),
-  status: z.enum(["PLACED", "ACTIVE", "COLLECTION", "CLOSED"]).optional(),
+  status: z.enum(["PROGRESS", "COMPLETED", "CLOSED"]).optional(),
   createdBy: z.string().uuid().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),

@@ -86,11 +86,17 @@ export default function BatchesPage() {
                       Farm {typeof batch.farmId === 'object' && batch.farmId ? (batch.farmId as any).name : String(batch.farmId).substring(0, 8)}
                     </td>
                     <td className="px-6 py-4">
-                      {batch.status === 'ACTIVE' ? (
+                      {batch.status === 'PROGRESS' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#E6F8ED] text-[#00A859] border border-[#00A859]/20">
-                          Active
+                          Progress
                         </span>
-                      ) : (
+                      )}
+                      {batch.status === 'COMPLETED' && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#FFF9E6] text-[#D48800] border border-[#D48800]/20">
+                          Completed
+                        </span>
+                      )}
+                      {batch.status === 'CLOSED' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200">
                           Closed
                         </span>
@@ -103,7 +109,7 @@ export default function BatchesPage() {
                         <Link to={`/admin/batches/${batch.id}/track`} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Track Batch">
                           <Eye size={16} />
                         </Link>
-                        {batch.status === 'ACTIVE' && (
+                        {batch.status !== 'CLOSED' && (
                           <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Close Batch">
                             <Lock size={16} />
                           </button>

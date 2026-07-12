@@ -20,8 +20,10 @@ export interface FeedTransaction {
   batchId?: string;
   feedStockId: string;
   farmId?: string;
-  type: 'IN' | 'OUT';
+  type: 'IN' | 'OUT' | 'ISSUE' | 'RETURN' | 'RESTOCK';
+  category?: 'GODOWN' | 'TMS_IN' | 'RETURN' | 'TRANSFER_OUT' | 'CONSUMPTION' | null;
   quantityKg: number;
+  numberOfBags: number;
   cost?: number;
   reference?: string;
   notes?: string;

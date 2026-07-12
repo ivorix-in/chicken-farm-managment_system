@@ -29,7 +29,7 @@ export async function findBatchById(id: string) {
 }
 
 export async function findActiveBatchForFarm(farmId: string) {
-  return Batch.findOne({ farmId, status: { $in: ["PLACED", "ACTIVE", "COLLECTION"] } });
+  return Batch.findOne({ farmId, status: { $in: ["PROGRESS", "COMPLETED"] } });
 }
 
 export async function createBatchRecord(data: Partial<IBatch>) {
@@ -41,12 +41,12 @@ export async function updateBatchRecord(id: string, data: Partial<IBatch>) {
 }
 
 export async function countActiveBatches() {
-  return Batch.countDocuments({ status: { $in: ["PLACED", "ACTIVE", "COLLECTION"] } });
+  return Batch.countDocuments({ status: { $in: ["PROGRESS", "COMPLETED"] } });
 }
 
 export async function sumActiveBirds() {
   const result = await Batch.aggregate([
-    { $match: { status: { $in: ["PLACED", "ACTIVE", "COLLECTION"] } } },
+    { $match: { status: { $in: ["PROGRESS", "COMPLETED"] } } },
     { $group: { _id: null, totalBirds: { $sum: "$currentBirdCount" }, totalMortality: { $sum: "$totalMortality" }, totalChicks: { $sum: "$chickCount" } } },
   ]);
   return result[0] ?? { totalBirds: 0, totalMortality: 0, totalChicks: 0 };

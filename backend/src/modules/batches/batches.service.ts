@@ -57,7 +57,7 @@ export async function createBatch(input: CreateBatchInput, actorId: string, ip?:
     totalMortality: 0,
     placementDate: new Date(input.placementDate),
     expectedClosureDate: input.expectedClosureDate ? new Date(input.expectedClosureDate) : null,
-    status: "PLACED",
+    status: "PROGRESS",
     notes: input.notes?.trim() ?? null,
     createdBy: actorId,
     closedAt: null,
@@ -80,15 +80,37 @@ export async function createBatch(input: CreateBatchInput, actorId: string, ip?:
   return batch.toObject();
 }
 
-export async function updateBatch(id: string, input: Partial<{ status: "PLACED" | "ACTIVE" | "COLLECTION"; notes: string | null; expectedClosureDate: string }>, actorId: string, ip?: string) {
+export async function updateBatch(
+  id: string,
+  input: Partial<{
+    status: "PROGRESS" | "COMPLETED" | "CLOSED";
+    notes: string | null;
+    managerRemarks: string | null;
+    expectedClosureDate: string;
+    soldBirds: number;
+    totalKgsSold: number;
+  }>,
+  actorId: string,
+  ip?: string
+) {
   const existing = await findBatchById(id);
   if (!existing) throw new AppError(404, "Batch not found");
   if (existing.status === "CLOSED") throw new AppError(400, "Cannot update a closed batch");
 
+  let currentBirdCount = existing.currentBirdCount;
+  if (input.soldBirds !== undefined) {
+    currentBirdCount = Math.max(0, existing.chickCount - existing.totalMortality - existing.totalCulls - existing.totalOwnUse - input.soldBirds);
+  }
+  const computedStatus = input.status || (currentBirdCount === 0 ? "COMPLETED" : existing.status);
+
   const updated = await updateBatchRecord(id, {
-    ...(input.status && { status: input.status }),
     ...(input.notes !== undefined && { notes: input.notes }),
+    ...(input.managerRemarks !== undefined && { managerRemarks: input.managerRemarks }),
     ...(input.expectedClosureDate && { expectedClosureDate: new Date(input.expectedClosureDate) }),
+    ...(input.soldBirds !== undefined && { soldBirds: input.soldBirds }),
+    ...(input.totalKgsSold !== undefined && { totalKgsSold: input.totalKgsSold }),
+    currentBirdCount,
+    status: computedStatus,
   });
 
   logAction({ userId: actorId, action: "update", entity: "Batch", entityId: id, changes: input as Record<string, unknown>, ip });
@@ -128,6 +150,11 @@ export async function getBatchSummary(id: string) {
     chickCount: batch.chickCount,
     currentBirdCount: batch.currentBirdCount,
     totalMortality: batch.totalMortality,
+    totalCulls: batch.totalCulls,
+    totalWeakBirds: batch.totalWeakBirds,
+    totalOwnUse: batch.totalOwnUse,
+    soldBirds: batch.soldBirds,
+    totalKgsSold: batch.totalKgsSold,
     currentAgeDays,
     averageWeightKg: lastVisit?.approxWeightKg ?? 0,
     totalFeedUsedKg: totalFeedUsed,

@@ -7,9 +7,13 @@ export interface DailyVisit {
   visitDate: string;
   mortalityToday: number;
   mortalityTotal: number;
+  cullsToday: number;
+  weakBirdsToday: number;
+  ownUseToday: number;
   birdCount: number;
   approxWeightKg: number;
   feedUsedKg: number;
+  feedBagsUsed: number;
   remarks?: string;
   notifyDoctor?: boolean;
   createdAt: string;
@@ -29,8 +33,12 @@ export interface CreateDailyVisitPayload {
   batchId: string;
   visitDate: string;
   mortalityToday: number;
+  cullsToday: number;
+  weakBirdsToday: number;
+  ownUseToday: number;
   approxWeightKg: number;
   feedUsedKg: number;
+  feedBagsUsed: number;
   remarks?: string;
   notifyDoctor?: boolean;
 }

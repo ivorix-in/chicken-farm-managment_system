@@ -14,7 +14,9 @@ export const createTransactionBody = z.object({
   batchId: z.string().uuid().optional(),
   feedStockId: z.string().uuid(),
   quantityKg: z.number().min(0.01),
+  numberOfBags: z.number().int().min(0).default(0),
   type: z.enum(txTypes),
+  category: z.enum(["GODOWN", "TMS_IN", "RETURN", "TRANSFER_OUT", "CONSUMPTION"]).optional(),
   notes: z.string().max(500).optional(),
 });
 

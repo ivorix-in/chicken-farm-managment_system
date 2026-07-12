@@ -71,7 +71,7 @@ export default function Topbar({
 
   return (
     <header
-      className={`h-14 bg-white border-b border-gray-100 flex items-center justify-between gap-3 px-6 fixed top-0 right-0 left-0 z-40 transition-[left] duration-300 ease-out ${mainOffset}`}
+      className={`h-14 bg-white border-b border-gray-100 flex items-center justify-between gap-3 px-6 fixed top-0 right-0 left-0 z-40 transition-[left] duration-300 ease-out print:hidden ${mainOffset}`}
     >
       <div className="flex items-center gap-4 min-w-0 flex-1">
         <button

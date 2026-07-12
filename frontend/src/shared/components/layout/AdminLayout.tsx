@@ -20,7 +20,7 @@ export default function AdminLayout() {
 
       <div
         className={`
-                fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-out lg:translate-x-0
+                fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-out lg:translate-x-0 print:hidden
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             `}
       >
@@ -31,7 +31,7 @@ export default function AdminLayout() {
       </div>
 
       <div
-        className={`flex flex-col min-h-screen transition-[padding] duration-300 ease-out ${
+        className={`flex flex-col min-h-screen transition-[padding] duration-300 ease-out print:pl-0 ${
           sidebarCollapsed ? 'lg:pl-14' : 'lg:pl-56'
         }`}
       >
@@ -41,7 +41,7 @@ export default function AdminLayout() {
           onToggleSidebarCollapsed={() => setSidebarCollapsed((c) => !c)}
         />
 
-        <main className="flex-1 mt-14 sm:mt-14 px-2 py-3 sm:px-3 sm:py-3 lg:px-4 lg:py-4">
+        <main className="flex-1 mt-14 sm:mt-14 px-2 py-3 sm:px-3 sm:py-3 lg:px-4 lg:py-4 print:mt-0 print:p-0">
           <div className="max-w-[min(100%,90rem)] mx-auto w-full animate-in fade-in duration-500">
             <PageView>
               <Outlet />
