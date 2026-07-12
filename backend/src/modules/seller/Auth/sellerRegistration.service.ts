@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../../../core/prisma.js";
+import { Seller, SellerPasswordResetOtp } from "../models/index.js";
 import { AppError } from "../../../core/errors/AppError.js";
 import type { Env } from "../../../core/env.js";
 import { hashPassword, normalizeEmail } from "./sellerAuth.helper.js";
@@ -24,37 +24,41 @@ export async function registerSeller(
 ): Promise<{ message: string }> {
   const email = normalizeEmail(input.email);
 
-  const existing = await prisma.seller.findUnique({ where: { email } });
+  const existing = await Seller.findOne({ email });
   if (existing) {
     if (existing.isActive) {
-      throw new AppError(409, "An account with this email already exists", "EMAIL_TAKEN");
+      throw new AppError(
+        409,
+        "An account with this email already exists",
+        "EMAIL_TAKEN"
+      );
     }
-    // Account exists but not yet verified — resend OTP
-    return sendRegistrationOtp(env, existing.id, email, input.firstName);
+    return sendRegistrationOtp(env, existing.id, email, existing.firstName);
   }
 
-  const phoneExists = await prisma.seller.findUnique({
-    where: { phoneNumber: input.phoneNumber },
-  });
+  const phoneExists = await Seller.findOne({ phoneNumber: input.phoneNumber });
   if (phoneExists) {
-    throw new AppError(409, "This phone number is already registered", "PHONE_TAKEN");
+    throw new AppError(
+      409,
+      "This phone number is already registered",
+      "PHONE_TAKEN"
+    );
   }
 
   const passwordHash = await hashPassword(input.password);
 
-  const seller = await prisma.seller.create({
-    data: {
-      firstName: input.firstName,
-      lastName: input.lastName,
-      email,
-      password: passwordHash,
-      phoneNumber: input.phoneNumber,
-      country: input.country,
-      sellerType: input.sellerType,
-      isActive: false,
-      status: "PENDING",
-      ...(input.sellerType === "BUSINESS" ? { businessProfile: { create: {} } } : { individualProfile: { create: {} } }),
-    },
+  const seller = await Seller.create({
+    firstName: input.firstName,
+    lastName: input.lastName,
+    email,
+    password: passwordHash,
+    phoneNumber: input.phoneNumber,
+    country: input.country,
+    sellerType: input.sellerType,
+    isActive: false,
+    status: "PENDING",
+    individualProfile: input.sellerType === "INDIVIDUAL" ? {} : null,
+    businessProfile: input.sellerType === "BUSINESS" ? {} : null,
   });
 
   return sendRegistrationOtp(env, seller.id, email, input.firstName);
@@ -66,11 +70,10 @@ async function sendRegistrationOtp(
   email: string,
   firstName: string
 ): Promise<{ message: string }> {
-  // Invalidate any existing unused OTPs
-  await prisma.sellerPasswordResetOtp.updateMany({
-    where: { sellerId, usedAt: null },
-    data: { usedAt: new Date() },
-  });
+  await SellerPasswordResetOtp.updateMany(
+    { sellerId, usedAt: null },
+    { usedAt: new Date() }
+  );
 
   const otp = generateNumericOtp(PASSWORD_RESET_OTP_LENGTH);
   const otpHash = await bcrypt.hash(otp, PASSWORD_RESET_OTP_BCRYPT_ROUNDS);
@@ -78,9 +81,7 @@ async function sendRegistrationOtp(
     Date.now() + env.PASSWORD_RESET_OTP_TTL_MINUTES * 60 * 1000
   );
 
-  await prisma.sellerPasswordResetOtp.create({
-    data: { sellerId, otpHash, expiresAt },
-  });
+  await SellerPasswordResetOtp.create({ sellerId, otpHash, expiresAt });
 
   await sendSellerRegistrationOtpEmail(env, {
     to: email,
@@ -105,7 +106,7 @@ export async function verifyRegistrationOtp(
   const invalid = () =>
     new AppError(400, "Invalid or expired verification code", "OTP_INVALID");
 
-  const seller = await prisma.seller.findUnique({ where: { email } });
+  const seller = await Seller.findOne({ email });
   if (!seller) throw invalid();
 
   if (seller.isActive) {
@@ -113,32 +114,30 @@ export async function verifyRegistrationOtp(
   }
 
   const now = new Date();
-  const otpRow = await prisma.sellerPasswordResetOtp.findFirst({
-    where: { sellerId: seller.id, usedAt: null, expiresAt: { gt: now } },
-    orderBy: { createdAt: "desc" },
-  });
+  const otpRow = await SellerPasswordResetOtp.findOne({
+    sellerId: seller.id,
+    usedAt: null,
+    expiresAt: { $gt: now },
+  }).sort({ createdAt: -1 });
 
   if (!otpRow || otpRow.attempts >= maxAttempts) throw invalid();
 
   const otpOk = await bcrypt.compare(input.otp, otpRow.otpHash);
   if (!otpOk) {
-    await prisma.sellerPasswordResetOtp.update({
-      where: { id: otpRow.id },
-      data: { attempts: { increment: 1 } },
+    await SellerPasswordResetOtp.findByIdAndUpdate(otpRow.id, {
+      $inc: { attempts: 1 },
     });
     throw invalid();
   }
 
-  await prisma.$transaction([
-    prisma.seller.update({
-      where: { id: seller.id },
-      data: { isActive: true, status: "ACTIVE" },
-    }),
-    prisma.sellerPasswordResetOtp.update({
-      where: { id: otpRow.id },
-      data: { usedAt: now },
-    }),
-  ]);
+  // Update sequentially
+  await Seller.findByIdAndUpdate(seller.id, {
+    isActive: true,
+    status: "ACTIVE",
+  });
+  await SellerPasswordResetOtp.findByIdAndUpdate(otpRow.id, {
+    usedAt: now,
+  });
 
   return { message: "Email verified successfully. You can now sign in." };
 }
@@ -148,11 +147,12 @@ export async function resendRegistrationOtp(
   input: { email: string }
 ): Promise<{ message: string }> {
   const email = normalizeEmail(input.email);
-  const seller = await prisma.seller.findUnique({ where: { email } });
+  const seller = await Seller.findOne({ email });
 
-  // Always return same message to prevent enumeration
   if (!seller || seller.isActive) {
-    return { message: "A verification code has been sent to your email address." };
+    return {
+      message: "A verification code has been sent to your email address.",
+    };
   }
 
   return sendRegistrationOtp(env, seller.id, email, seller.firstName);

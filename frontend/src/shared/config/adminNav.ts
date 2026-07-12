@@ -1,20 +1,16 @@
-/**
- * Sidebar navigation manifest (labels, routes, RBAC gates, placeholders).
- */
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
-  BarChart3,
-  UserCog,
-  Store,
+  ClipboardList,
+  Activity,
   Package,
-  ShoppingCart,
+  Pill,
   Users,
-  ShieldCheck,
+  Tractor,
+  Map,
   Settings,
 } from 'lucide-react';
 import { ROUTE_PATHS } from '../../config/routes';
-import { PERMISSIONS } from '../../constants/permissions';
 
 export type AdminNavItem = {
   id: string;
@@ -34,65 +30,29 @@ export type AdminNavGroup = {
 export const ADMIN_NAV_GROUPS: readonly AdminNavGroup[] = [
   {
     id: 'main',
-    title: 'Main Menu',
+    title: 'Menu',
     items: [
       { id: 'dashboard', label: 'Dashboard', to: ROUTE_PATHS.ADMIN_DASHBOARD, Icon: LayoutDashboard },
-      {
-        id: 'analytics',
-        label: 'Analytics',
-        to: ROUTE_PATHS.ADMIN_ANALYTICS,
-        Icon: BarChart3,
-        comingSoon: true,
-      },
+      { id: 'batches', label: 'Batches', to: ROUTE_PATHS.ADMIN_BATCHES, Icon: Activity },
+      { id: 'daily-visits', label: 'Daily Visits', to: ROUTE_PATHS.ADMIN_DAILY_VISITS, Icon: ClipboardList },
+      { id: 'feed', label: 'Feed Inventory', to: ROUTE_PATHS.ADMIN_FEED, Icon: Package },
+      { id: 'medicines', label: 'Medicines', to: ROUTE_PATHS.ADMIN_MEDICINES, Icon: Pill },
     ],
   },
   {
-    id: 'management',
-    title: 'Marketplace',
+    id: 'master',
+    title: 'Master Data',
     items: [
-      {
-        id: 'roles',
-        label: 'Roles & permissions',
-        to: ROUTE_PATHS.ADMIN_ROLES,
-        Icon: UserCog,
-        permission: PERMISSIONS.ADMIN.ROLE.READ,
-      },
-      { id: 'sellers', label: 'Sellers', to: ROUTE_PATHS.ADMIN_SELLERS, Icon: Store },
-      {
-        id: 'products',
-        label: 'Products',
-        to: ROUTE_PATHS.ADMIN_PRODUCTS,
-        Icon: Package,
-        comingSoon: true,
-      },
-      {
-        id: 'orders',
-        label: 'Orders',
-        to: ROUTE_PATHS.ADMIN_ORDERS,
-        Icon: ShoppingCart,
-        comingSoon: true,
-      },
-      { id: 'users', label: 'Admins', to: ROUTE_PATHS.ADMIN_USERS, Icon: Users, comingSoon: true },
+      { id: 'farms', label: 'Farms', to: ROUTE_PATHS.ADMIN_FARMS, Icon: Tractor },
+      { id: 'farmers', label: 'Farmers', to: ROUTE_PATHS.ADMIN_FARMERS, Icon: Users },
+      { id: 'areas', label: 'Areas', to: ROUTE_PATHS.ADMIN_AREAS, Icon: Map },
     ],
   },
   {
     id: 'system',
     title: 'System',
     items: [
-      {
-        id: 'security',
-        label: 'Security',
-        to: ROUTE_PATHS.ADMIN_SECURITY,
-        Icon: ShieldCheck,
-        comingSoon: true,
-      },
-      {
-        id: 'settings',
-        label: 'Settings',
-        to: ROUTE_PATHS.ADMIN_SETTINGS,
-        Icon: Settings,
-        comingSoon: true,
-      },
+      { id: 'settings', label: 'Settings', to: ROUTE_PATHS.ADMIN_SETTINGS, Icon: Settings, comingSoon: true },
     ],
   },
 ];

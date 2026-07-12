@@ -5,7 +5,6 @@ export {
   DataTablePrimaryButton,
   DataTableToolbarButton,
   DataTableStatusBadge,
-  paginationRange,
 } from './DataTable';
 export type {
   DataTableColumn,

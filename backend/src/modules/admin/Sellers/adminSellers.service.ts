@@ -1,10 +1,6 @@
-import type { Seller, SellerType as PrismaSellerType } from "@prisma/client";
-import { prisma } from "../../../core/prisma.js";
+import { Seller } from "../../seller/models/index.js";
 import { AppError } from "../../../core/errors/AppError.js";
-import {
-  hashPassword,
-  normalizeEmail,
-} from "../Auth/adminAuth.helper.js";
+import { hashPassword, normalizeEmail } from "../Auth/adminAuth.helper.js";
 
 /** Dial codes used when splitting stored phone numbers for the admin UI. */
 const KNOWN_PHONE_CODES = [
@@ -29,14 +25,6 @@ export type SellerApiShape = {
   createdAt: string;
   updatedAt: string;
 };
-
-function toPrismaSellerType(type: "individual" | "business"): PrismaSellerType {
-  return type === "business" ? "BUSINESS" : "INDIVIDUAL";
-}
-
-function fromPrismaSellerType(type: PrismaSellerType): "individual" | "business" {
-  return type === "BUSINESS" ? "business" : "individual";
-}
 
 export function buildFullPhoneNumber(phoneCode: string, localNumber: string): string {
   const code = phoneCode.trim();
@@ -64,7 +52,7 @@ export function splitPhoneNumber(full: string): {
   return { phoneCode: "+1", phoneNumber: normalized.replace(/^\+/u, "") };
 }
 
-export function serializeSeller(row: Seller): SellerApiShape {
+export function serializeSeller(row: any): SellerApiShape {
   const { phoneCode, phoneNumber } = splitPhoneNumber(row.phoneNumber);
   return {
     id: row.id,
@@ -74,21 +62,19 @@ export function serializeSeller(row: Seller): SellerApiShape {
     country: row.country,
     phoneCode,
     phoneNumber,
-    sellerType: fromPrismaSellerType(row.sellerType),
+    sellerType: row.sellerType === "BUSINESS" ? "business" : "individual",
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
 }
 
 export async function listSellers() {
-  const rows = await prisma.seller.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  const rows = await Seller.find().sort({ createdAt: "desc" });
   return rows.map(serializeSeller);
 }
 
 export async function getSellerById(sellerId: string) {
-  const row = await prisma.seller.findUnique({ where: { id: sellerId } });
+  const row = await Seller.findById(sellerId);
   if (!row) {
     throw new AppError(404, "Seller not found");
   }
@@ -109,8 +95,8 @@ export async function createSeller(input: {
   const phoneNumber = buildFullPhoneNumber(input.phoneCode, input.phoneNumber);
 
   const [emailTaken, phoneTaken] = await Promise.all([
-    prisma.seller.findUnique({ where: { email } }),
-    prisma.seller.findUnique({ where: { phoneNumber } }),
+    Seller.findOne({ email }),
+    Seller.findOne({ phoneNumber }),
   ]);
 
   if (emailTaken) {
@@ -121,17 +107,20 @@ export async function createSeller(input: {
   }
 
   const passwordHash = await hashPassword(input.password);
+  const sellerType = input.sellerType === "business" ? "BUSINESS" : "INDIVIDUAL";
 
-  const row = await prisma.seller.create({
-    data: {
-      firstName: input.firstName.trim(),
-      lastName: input.lastName.trim(),
-      email,
-      password: passwordHash,
-      phoneNumber,
-      country: input.country.trim(),
-      sellerType: toPrismaSellerType(input.sellerType),
-    },
+  const row = await Seller.create({
+    firstName: input.firstName.trim(),
+    lastName: input.lastName.trim(),
+    email,
+    password: passwordHash,
+    phoneNumber,
+    country: input.country.trim(),
+    sellerType,
+    isActive: true,
+    status: "ACTIVE",
+    individualProfile: sellerType === "INDIVIDUAL" ? {} : null,
+    businessProfile: sellerType === "BUSINESS" ? {} : null,
   });
 
   return serializeSeller(row);
@@ -150,7 +139,7 @@ export async function updateSeller(
     sellerType: "individual" | "business";
   }>
 ) {
-  const current = await prisma.seller.findUnique({ where: { id: sellerId } });
+  const current = await Seller.findById(sellerId);
   if (!current) {
     throw new AppError(404, "Seller not found");
   }
@@ -159,8 +148,9 @@ export async function updateSeller(
     input.email !== undefined ? normalizeEmail(input.email) : undefined;
 
   if (email !== undefined && email !== current.email) {
-    const emailTaken = await prisma.seller.findFirst({
-      where: { email, NOT: { id: sellerId } },
+    const emailTaken = await Seller.findOne({
+      email,
+      _id: { $ne: sellerId },
     });
     if (emailTaken) {
       throw new AppError(409, "A seller with this email already exists");
@@ -175,8 +165,9 @@ export async function updateSeller(
       input.phoneNumber ?? local
     );
     if (phoneNumber !== current.phoneNumber) {
-      const phoneTaken = await prisma.seller.findFirst({
-        where: { phoneNumber, NOT: { id: sellerId } },
+      const phoneTaken = await Seller.findOne({
+        phoneNumber,
+        _id: { $ne: sellerId },
       });
       if (phoneTaken) {
         throw new AppError(409, "A seller with this phone number already exists");
@@ -184,40 +175,31 @@ export async function updateSeller(
     }
   }
 
-  const data: {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    country?: string;
-    phoneNumber?: string;
-    password?: string;
-    sellerType?: PrismaSellerType;
-  } = {};
-
-  if (input.firstName !== undefined) data.firstName = input.firstName.trim();
-  if (input.lastName !== undefined) data.lastName = input.lastName.trim();
-  if (email !== undefined) data.email = email;
-  if (input.country !== undefined) data.country = input.country.trim();
-  if (phoneNumber !== undefined) data.phoneNumber = phoneNumber;
+  const updateData: any = {};
+  if (input.firstName !== undefined) updateData.firstName = input.firstName.trim();
+  if (input.lastName !== undefined) updateData.lastName = input.lastName.trim();
+  if (email !== undefined) updateData.email = email;
+  if (input.country !== undefined) updateData.country = input.country.trim();
+  if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
   if (input.sellerType !== undefined) {
-    data.sellerType = toPrismaSellerType(input.sellerType);
+    updateData.sellerType = input.sellerType === "business" ? "BUSINESS" : "INDIVIDUAL";
   }
   if (input.password !== undefined && input.password.length > 0) {
-    data.password = await hashPassword(input.password);
+    updateData.password = await hashPassword(input.password);
   }
 
-  const row = await prisma.seller.update({
-    where: { id: sellerId },
-    data,
-  });
+  const row = await Seller.findByIdAndUpdate(sellerId, updateData, { new: true });
+  if (!row) {
+    throw new AppError(404, "Seller not found");
+  }
 
   return serializeSeller(row);
 }
 
 export async function deleteSeller(sellerId: string) {
-  const current = await prisma.seller.findUnique({ where: { id: sellerId } });
+  const current = await Seller.findById(sellerId);
   if (!current) {
     throw new AppError(404, "Seller not found");
   }
-  await prisma.seller.delete({ where: { id: sellerId } });
+  await Seller.findByIdAndDelete(sellerId);
 }

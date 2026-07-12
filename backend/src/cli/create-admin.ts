@@ -4,10 +4,10 @@
  */
 import "dotenv/config";
 import * as readline from "readline/promises";
-import { PrismaClient } from "@prisma/client";
+import mongoose from "mongoose";
+import { AdminRole, AdminUser } from "../modules/admin/models/index.js";
 import { hashPassword, normalizeEmail } from "../modules/admin/Auth/adminAuth.helper.js";
 
-const prisma = new PrismaClient();
 const MIN_PASSWORD_LENGTH = 8;
 
 const stdinStream = process.stdin;
@@ -64,16 +64,12 @@ async function questionPassword(
 }
 
 async function ensureSuperAdminRole() {
-  let role = await prisma.adminRole.findUnique({
-    where: { code: "SUPER_ADMIN" },
-  });
+  let role = await AdminRole.findOne({ code: "SUPER_ADMIN" });
   if (!role) {
-    role = await prisma.adminRole.create({
-      data: {
-        name: "Super Admin",
-        code: "SUPER_ADMIN",
-        permissions: ["*"],
-      },
+    role = await AdminRole.create({
+      name: "Super Admin",
+      code: "SUPER_ADMIN",
+      permissions: ["*"],
     });
     console.log("Created role:", role.code);
   }
@@ -81,6 +77,13 @@ async function ensureSuperAdminRole() {
 }
 
 async function main() {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    console.error("DATABASE_URL env variable not defined.");
+    process.exit(1);
+  }
+  await mongoose.connect(dbUrl);
+
   const rl = readline.createInterface({ input: stdinStream, output });
 
   try {
@@ -110,9 +113,7 @@ async function main() {
       return;
     }
 
-    const existing = await prisma.adminUser.findUnique({
-      where: { email },
-    });
+    const existing = await AdminUser.findOne({ email });
     if (existing) {
       console.error("An admin with this email already exists.");
       process.exitCode = 1;
@@ -123,24 +124,22 @@ async function main() {
     const passwordHash = await hashPassword(password);
     const name = defaultNameFromEmail(email);
 
-    await prisma.adminUser.create({
-      data: {
-        email,
-        passwordHash,
-        roleId: role.id,
-        name,
-      },
+    await AdminUser.create({
+      email,
+      passwordHash,
+      roleId: role.id,
+      name,
     });
 
     console.log("Created admin:", email, `(${name}, role ${role.code})`);
   } finally {
     rl.close();
-    await prisma.$disconnect();
+    await mongoose.disconnect();
   }
 }
 
 main().catch((e) => {
   console.error(e);
-  void prisma.$disconnect();
+  void mongoose.disconnect();
   process.exit(1);
 });

@@ -1,26 +1,18 @@
 import type { ErrorRequestHandler } from "express";
-import {
-  PrismaClientInitializationError,
-  PrismaClientKnownRequestError,
-} from "@prisma/client/runtime/library";
+import mongoose from "mongoose";
 import { isAppError } from "../errors/AppError.js";
 import { ZodError } from "zod";
 
-function isPrismaUnreachable(err: unknown): boolean {
-  if (err instanceof PrismaClientInitializationError) return true;
-  if (err instanceof PrismaClientKnownRequestError) {
-    /** @see https://www.prisma.io/docs/reference/api-reference/error-reference */
-    const connectivity = ["P1001", "P1002", "P1017"];
-    return connectivity.includes(err.code);
+function isMongoUnreachable(err: unknown): boolean {
+  if (err instanceof mongoose.Error) {
+    if (err.name === "MongooseServerSelectionError") return true;
   }
-  // `instanceof` can fail across bundles; fall back to Prisma’s error shape / message.
   if (err != null && typeof err === "object") {
     const e = err as { name?: string; message?: string };
-    if (e.name === "PrismaClientInitializationError") return true;
+    if (e.name === "MongooseServerSelectionError" || e.name === "MongoNetworkError") return true;
     if (
       typeof e.message === "string" &&
-      (/Can't reach database server|P1001|P1002|P1017/u.test(e.message) ||
-        e.message.includes("PrismaClientInitializationError"))
+      (e.message.includes("MongooseServerSelectionError") || e.message.includes("MongoNetworkError"))
     ) {
       return true;
     }
@@ -43,12 +35,12 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
 
-  if (isPrismaUnreachable(err)) {
+  if (isMongoUnreachable(err)) {
     console.error(err);
     res.status(503).json({
       error: {
         message:
-          "Database is unavailable. If you use Neon: open the dashboard to resume the project, use the pooled URL with ?sslmode=require&pgbouncer=true (remove channel_binding), verify credentials, then retry.",
+          "Database is unavailable. Please verify your MongoDB connection string and ensure MongoDB service is running.",
         code: "DB_UNAVAILABLE",
       },
     });

@@ -1,5 +1,9 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../../../core/prisma.js";
+import {
+  AdminUser,
+  AdminRefreshToken,
+  AdminPasswordResetOtp,
+} from "../models/index.js";
 import { AppError } from "../../../core/errors/AppError.js";
 import type { Env } from "../../../core/env.js";
 import { sendAdminPasswordResetOtpEmail } from "../../../core/email/mailer.js";
@@ -20,23 +24,12 @@ import {
 const LOGIN_LOCK_THRESHOLD = 5;
 const LOGIN_LOCK_MINUTES = 15;
 
-function adminSessionAdminDto(adminUser: {
-  id: string;
-  email: string;
-  name: string;
-  mobileNumber: string | null;
-  role: {
-    id: string;
-    name: string;
-    code: string;
-    permissions: unknown;
-  };
-}) {
+function adminSessionAdminDto(adminUser: any) {
   return {
     id: adminUser.id,
     email: adminUser.email,
     name: adminUser.name,
-    mobileNumber: adminUser.mobileNumber,
+    mobileNumber: adminUser.mobileNumber ?? null,
     role: {
       id: adminUser.role.id,
       name: adminUser.role.name,
@@ -51,10 +44,9 @@ export async function loginAdmin(
   input: { email: string; password: string }
 ) {
   const now = new Date();
-  const adminUser = await prisma.adminUser.findUnique({
-    where: { email: normalizeEmail(input.email) },
-    include: { role: true },
-  });
+  const adminUser = await AdminUser.findOne({
+    email: normalizeEmail(input.email),
+  }).populate("role");
 
   if (!adminUser || !adminUser.isActive || adminUser.deletedAt) {
     throw new AppError(401, "Invalid credentials");
@@ -66,23 +58,25 @@ export async function loginAdmin(
   const ok = await comparePassword(input.password, adminUser.passwordHash);
   if (!ok) {
     const nextAttempts = adminUser.failedLoginAttempts + 1;
-    await prisma.adminUser.update({
-      where: { id: adminUser.id },
-      data: {
-        failedLoginAttempts: nextAttempts,
-        lockUntil:
-          nextAttempts >= LOGIN_LOCK_THRESHOLD
-            ? new Date(Date.now() + LOGIN_LOCK_MINUTES * 60 * 1000)
-            : adminUser.lockUntil,
-      },
+    await AdminUser.findByIdAndUpdate(adminUser.id, {
+      failedLoginAttempts: nextAttempts,
+      lockUntil:
+        nextAttempts >= LOGIN_LOCK_THRESHOLD
+          ? new Date(Date.now() + LOGIN_LOCK_MINUTES * 60 * 1000)
+          : adminUser.lockUntil,
     });
     throw new AppError(401, "Invalid credentials");
+  }
+
+  const roleObj = adminUser.role as any;
+  if (!roleObj) {
+    throw new AppError(500, "User role not found");
   }
 
   const accessToken = generateAdminAccessToken(env, {
     sub: adminUser.id,
     email: adminUser.email,
-    role: adminUser.role.code,
+    role: roleObj.code,
   });
 
   const {
@@ -91,27 +85,20 @@ export async function loginAdmin(
     expiresAt: refreshExpiresAt,
   } = generateAdminRefreshToken(env, { sub: adminUser.id });
   const refreshTokenHash = hashAdminRefreshTokenForStorage(refreshToken);
-  await prisma.$transaction([
-    prisma.adminUser.update({
-      where: { id: adminUser.id },
-      data: {
-        failedLoginAttempts: 0,
-        lockUntil: null,
-        lastLoginAt: now,
-      },
-    }),
-    prisma.adminRefreshToken.deleteMany({
-      where: { adminUserId: adminUser.id },
-    }),
-    prisma.adminRefreshToken.create({
-      data: {
-        id: jti,
-        tokenHash: refreshTokenHash,
-        adminUserId: adminUser.id,
-        expiresAt: refreshExpiresAt,
-      },
-    }),
-  ]);
+
+  // Perform updates sequentially
+  await AdminUser.findByIdAndUpdate(adminUser.id, {
+    failedLoginAttempts: 0,
+    lockUntil: null,
+    lastLoginAt: now,
+  });
+  await AdminRefreshToken.deleteMany({ adminUserId: adminUser.id });
+  await AdminRefreshToken.create({
+    _id: jti,
+    tokenHash: refreshTokenHash,
+    adminUserId: adminUser.id,
+    expiresAt: refreshExpiresAt,
+  });
 
   return {
     accessToken,
@@ -144,26 +131,22 @@ export async function refreshAdminSession(
   }
 
   const presentedHash = hashAdminRefreshTokenForStorage(refreshTokenRaw);
-  const row = await prisma.adminRefreshToken.findUnique({
-    where: { id: payload.jti },
-    include: {
-      adminUser: {
-        include: {
-          role: true,
-        },
-      },
-    },
-  });
+  const row = await AdminRefreshToken.findById(payload.jti);
 
   if (!row) {
     throw invalid();
   }
 
+  const adminUser = await AdminUser.findById(row.adminUserId).populate("role");
+  if (!adminUser) {
+    throw invalid();
+  }
+
   if (row.tokenHash !== presentedHash) {
-    await prisma.adminRefreshToken.updateMany({
-      where: { adminUserId: row.adminUserId },
-      data: { revokedAt: new Date() },
-    });
+    await AdminRefreshToken.updateMany(
+      { adminUserId: row.adminUserId },
+      { revokedAt: new Date() }
+    );
     throw invalid();
   }
 
@@ -172,10 +155,7 @@ export async function refreshAdminSession(
   }
 
   if (row.expiresAt <= new Date()) {
-    await prisma.adminRefreshToken.update({
-      where: { id: row.id },
-      data: { revokedAt: new Date() },
-    });
+    await AdminRefreshToken.findByIdAndUpdate(row.id, { revokedAt: new Date() });
     throw invalid();
   }
 
@@ -183,23 +163,27 @@ export async function refreshAdminSession(
     throw invalid();
   }
 
-  const adminUser = row.adminUser;
   if (
     !adminUser.isActive ||
     adminUser.deletedAt ||
     (adminUser.lockUntil != null && adminUser.lockUntil > new Date())
   ) {
-    await prisma.adminRefreshToken.updateMany({
-      where: { adminUserId: adminUser.id },
-      data: { revokedAt: new Date() },
-    });
+    await AdminRefreshToken.updateMany(
+      { adminUserId: adminUser.id },
+      { revokedAt: new Date() }
+    );
+    throw invalid();
+  }
+
+  const roleObj = adminUser.role as any;
+  if (!roleObj) {
     throw invalid();
   }
 
   const accessToken = generateAdminAccessToken(env, {
     sub: adminUser.id,
     email: adminUser.email,
-    role: adminUser.role.code,
+    role: roleObj.code,
   });
 
   const {
@@ -209,20 +193,14 @@ export async function refreshAdminSession(
   } = generateAdminRefreshToken(env, { sub: adminUser.id });
   const newHash = hashAdminRefreshTokenForStorage(refreshToken);
 
-  await prisma.$transaction([
-    prisma.adminRefreshToken.update({
-      where: { id: row.id },
-      data: { revokedAt: new Date() },
-    }),
-    prisma.adminRefreshToken.create({
-      data: {
-        id: newJti,
-        tokenHash: newHash,
-        adminUserId: adminUser.id,
-        expiresAt: refreshExpiresAt,
-      },
-    }),
-  ]);
+  // Perform updates sequentially
+  await AdminRefreshToken.findByIdAndUpdate(row.id, { revokedAt: new Date() });
+  await AdminRefreshToken.create({
+    _id: newJti,
+    tokenHash: newHash,
+    adminUserId: adminUser.id,
+    expiresAt: refreshExpiresAt,
+  });
 
   return {
     accessToken,
@@ -251,8 +229,10 @@ export async function requestAdminPasswordReset(
   const startedAt = Date.now();
   try {
     const email = normalizeEmail(input.email);
-    const adminUser = await prisma.adminUser.findFirst({
-      where: { email, isActive: true, deletedAt: null },
+    const adminUser = await AdminUser.findOne({
+      email,
+      isActive: true,
+      deletedAt: null,
     });
 
     if (!adminUser) {
@@ -265,12 +245,10 @@ export async function requestAdminPasswordReset(
       Date.now() + env.PASSWORD_RESET_OTP_TTL_MINUTES * 60 * 1000
     );
 
-    await prisma.adminPasswordResetOtp.create({
-      data: {
-        userId: adminUser.id,
-        otpHash,
-        expiresAt,
-      },
+    await AdminPasswordResetOtp.create({
+      userId: adminUser.id,
+      otpHash,
+      expiresAt,
     });
 
     const appPublicUrl =
@@ -310,22 +288,21 @@ export async function resetAdminPasswordWithOtp(
   const invalid = () =>
     new AppError(400, "Invalid or expired verification code", "RESET_INVALID");
 
-  const adminUser = await prisma.adminUser.findFirst({
-    where: { email, isActive: true, deletedAt: null },
+  const adminUser = await AdminUser.findOne({
+    email,
+    isActive: true,
+    deletedAt: null,
   });
   if (!adminUser) {
     throw invalid();
   }
 
   const now = new Date();
-  const otpRow = await prisma.adminPasswordResetOtp.findFirst({
-    where: {
-      userId: adminUser.id,
-      usedAt: null,
-      expiresAt: { gt: now },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const otpRow = await AdminPasswordResetOtp.findOne({
+    userId: adminUser.id,
+    usedAt: null,
+    expiresAt: { $gt: now },
+  }).sort({ createdAt: -1 });
 
   if (!otpRow || otpRow.attempts >= maxAttempts) {
     throw invalid();
@@ -333,32 +310,24 @@ export async function resetAdminPasswordWithOtp(
 
   const otpOk = await bcrypt.compare(input.otp, otpRow.otpHash);
   if (!otpOk) {
-    await prisma.adminPasswordResetOtp.update({
-      where: { id: otpRow.id },
-      data: { attempts: { increment: 1 } },
+    await AdminPasswordResetOtp.findByIdAndUpdate(otpRow.id, {
+      $inc: { attempts: 1 },
     });
     throw invalid();
   }
 
   const passwordHash = await hashPassword(input.newPassword);
 
-  await prisma.$transaction([
-    prisma.adminUser.update({
-      where: { id: adminUser.id },
-      data: {
-        passwordHash,
-        failedLoginAttempts: 0,
-        lockUntil: null,
-      },
-    }),
-    prisma.adminPasswordResetOtp.update({
-      where: { id: otpRow.id },
-      data: { usedAt: now },
-    }),
-    prisma.adminRefreshToken.deleteMany({
-      where: { adminUserId: adminUser.id },
-    }),
-  ]);
+  // Perform updates sequentially
+  await AdminUser.findByIdAndUpdate(adminUser.id, {
+    passwordHash,
+    failedLoginAttempts: 0,
+    lockUntil: null,
+  });
+  await AdminPasswordResetOtp.findByIdAndUpdate(otpRow.id, {
+    usedAt: now,
+  });
+  await AdminRefreshToken.deleteMany({ adminUserId: adminUser.id });
 
   return {
     message: "Password has been reset. You can sign in with your new password.",
@@ -366,29 +335,23 @@ export async function resetAdminPasswordWithOtp(
 }
 
 export async function getAdminMe(adminUserId: string) {
-  const adminUser = await prisma.adminUser.findUnique({
-    where: { id: adminUserId },
-    include: {
-      role: {
-        select: {
-          id: true,
-          name: true,
-          code: true,
-          permissions: true,
-        },
-      },
-    },
-  });
+  const adminUser = await AdminUser.findById(adminUserId).populate("role");
 
   if (!adminUser || !adminUser.isActive || adminUser.deletedAt) {
     throw new AppError(403, "Company admin access required");
   }
 
+  const roleObj = adminUser.role as any;
   return {
     id: adminUser.id,
     email: adminUser.email,
     name: adminUser.name,
-    mobileNumber: adminUser.mobileNumber,
-    role: adminUser.role,
+    mobileNumber: adminUser.mobileNumber ?? null,
+    role: {
+      id: roleObj.id,
+      name: roleObj.name,
+      code: roleObj.code,
+      permissions: roleObj.permissions,
+    },
   };
 }

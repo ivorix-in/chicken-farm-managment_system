@@ -1,4 +1,4 @@
-import { prisma } from "../../../core/prisma.js";
+import { Seller } from "../models/index.js";
 import { AppError } from "../../../core/errors/AppError.js";
 import type { Env } from "../../../core/env.js";
 import {
@@ -27,8 +27,8 @@ export async function loginSeller(
   env: Env,
   input: { email: string; password: string }
 ) {
-  const seller = await prisma.seller.findUnique({
-    where: { email: normalizeEmail(input.email) },
+  const seller = await Seller.findOne({
+    email: normalizeEmail(input.email),
   });
 
   if (!seller) {
@@ -41,7 +41,11 @@ export async function loginSeller(
   }
 
   if (!seller.isActive) {
-    throw new AppError(403, "Please verify your email before signing in", "EMAIL_NOT_VERIFIED");
+    throw new AppError(
+      403,
+      "Please verify your email before signing in",
+      "EMAIL_NOT_VERIFIED"
+    );
   }
 
   const accessToken = generateSellerAccessToken(env, {
@@ -69,7 +73,11 @@ export async function refreshSellerSession(
   refreshToken: string;
   seller: ReturnType<typeof buildSellerSessionPayload>;
 }> {
-  const invalid = new AppError(401, "Invalid or expired refresh token", "REFRESH_INVALID");
+  const invalid = new AppError(
+    401,
+    "Invalid or expired refresh token",
+    "REFRESH_INVALID"
+  );
 
   let payload;
   try {
@@ -78,9 +86,7 @@ export async function refreshSellerSession(
     throw invalid;
   }
 
-  const seller = await prisma.seller.findUnique({
-    where: { id: payload.sub },
-  });
+  const seller = await Seller.findById(payload.sub);
 
   if (!seller) {
     throw invalid;
@@ -104,15 +110,7 @@ export async function refreshSellerSession(
 }
 
 export async function getSellerMe(sellerId: string) {
-  const seller = await prisma.seller.findUnique({
-    where: { id: sellerId },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-    },
-  });
+  const seller = await Seller.findById(sellerId).select("firstName lastName email");
 
   if (!seller) {
     throw new AppError(404, "Seller not found");

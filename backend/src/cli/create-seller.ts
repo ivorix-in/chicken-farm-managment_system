@@ -4,10 +4,10 @@
  */
 import "dotenv/config";
 import * as readline from "readline/promises";
-import { PrismaClient, SellerType } from "@prisma/client";
+import mongoose from "mongoose";
+import { Seller } from "../modules/seller/models/index.js";
 import { hashPassword, normalizeEmail } from "../modules/seller/Auth/sellerAuth.helper.js";
 
-const prisma = new PrismaClient();
 const MIN_PASSWORD_LENGTH = 8;
 
 const stdinStream = process.stdin;
@@ -27,7 +27,7 @@ async function questionPassword(
     let password = "";
     const onData = (key: string | Buffer) => {
       const s = typeof key === "string" ? key : key.toString("utf8");
-      if (s === "\n" || s === "\r" || s === "") {
+      if (s === "\n" || s === "\r" || s === " ") {
         stdinStream.setRawMode(false);
         stdinStream.pause();
         stdinStream.removeListener("data", onData);
@@ -35,13 +35,13 @@ async function questionPassword(
         resolve(password);
         return;
       }
-      if (s === "") {
+      if (s === " ") {
         stdinStream.setRawMode(false);
         stdinStream.pause();
         reject(new Error("Interrupted"));
         return;
       }
-      if (s === "" || s === "\b") {
+      if (s === " " || s === "\b") {
         if (password.length > 0) {
           password = password.slice(0, -1);
           output.write("\b \b");
@@ -56,6 +56,13 @@ async function questionPassword(
 }
 
 async function main() {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    console.error("DATABASE_URL env variable not defined.");
+    process.exit(1);
+  }
+  await mongoose.connect(dbUrl);
+
   const rl = readline.createInterface({ input: stdinStream, output });
 
   try {
@@ -78,7 +85,7 @@ async function main() {
       process.exitCode = 1;
       return;
     }
-    const sellerType = sellerTypeRaw as SellerType;
+    const sellerType = sellerTypeRaw as "BUSINESS" | "INDIVIDUAL";
 
     let password: string;
     try {
@@ -96,14 +103,14 @@ async function main() {
       return;
     }
 
-    const existing = await prisma.seller.findUnique({ where: { email } });
+    const existing = await Seller.findOne({ email });
     if (existing) {
       console.error("A seller with this email already exists.");
       process.exitCode = 1;
       return;
     }
 
-    const existingPhone = await prisma.seller.findUnique({ where: { phoneNumber } });
+    const existingPhone = await Seller.findOne({ phoneNumber });
     if (existingPhone) {
       console.error("A seller with this phone number already exists.");
       process.exitCode = 1;
@@ -111,29 +118,28 @@ async function main() {
     }
 
     const hashedPassword = await hashPassword(password);
-    await prisma.seller.create({
-      data: {
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        phoneNumber,
-        country,
-        sellerType,
-        isActive: true,
-        ...(sellerType === "BUSINESS" ? { businessProfile: { create: {} } } : { individualProfile: { create: {} } }),
-      },
+    await Seller.create({
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      phoneNumber,
+      country,
+      sellerType,
+      isActive: true,
+      individualProfile: sellerType === "INDIVIDUAL" ? {} : null,
+      businessProfile: sellerType === "BUSINESS" ? {} : null,
     });
 
     console.log(`Created seller: ${email} (${firstName} ${lastName}, ${sellerType})`);
   } finally {
     rl.close();
-    await prisma.$disconnect();
+    await mongoose.disconnect();
   }
 }
 
 main().catch((e) => {
   console.error(e);
-  void prisma.$disconnect();
+  void mongoose.disconnect();
   process.exit(1);
 });

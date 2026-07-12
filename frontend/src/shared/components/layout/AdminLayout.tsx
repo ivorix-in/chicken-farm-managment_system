@@ -32,7 +32,7 @@ export default function AdminLayout() {
 
       <div
         className={`flex flex-col min-h-screen transition-[padding] duration-300 ease-out ${
-          sidebarCollapsed ? 'lg:pl-14' : 'lg:pl-52'
+          sidebarCollapsed ? 'lg:pl-14' : 'lg:pl-56'
         }`}
       >
         <Topbar

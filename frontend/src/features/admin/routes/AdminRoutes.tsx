@@ -8,20 +8,20 @@ import RolesPage from '../roles/pages/RolesPage';
 import RoleCreatePage from '../roles/pages/RoleCreatePage';
 import ComingSoonPage from '../System/pages/ComingSoonPage';
 import { AuthGuard, RequirePermission } from '../Auth/guards';
-import SellersPage from '../Sellers/pages/SellersPage';
-import SellerCreation from '../Sellers/pages/components/SellerCreation';
-import SellerDetails from '../Sellers/pages/components/SellerDetails';
+
+import BatchesPage from '../Batches/pages/BatchesPage';
+import DailyVisitsPage from '../DailyVisits/pages/DailyVisitsPage';
+import FeedPage from '../Feed/pages/FeedPage';
+import MedicinesPage from '../Medicines/pages/MedicinesPage';
+import AreasPage from '../Areas/pages/AreasPage';
+import FarmersPage from '../Farmers/pages/FarmersPage';
+import FarmsPage from '../Farms/pages/FarmsPage';
+import EmployeesPage from '../Employees/pages/EmployeesPage';
 
 const COMING_SOON_ROUTES = [
-  { path: 'analytics', title: 'Analytics' },
-  { path: 'products', title: 'Products' },
-  { path: 'orders', title: 'Orders' },
-  { path: 'users', title: 'Admins' },
-  { path: 'security', title: 'Security' },
   { path: 'settings', title: 'Settings' },
 ] as const;
 
-/** `AuthGuard` enforces JWT session; nested `RequirePermission` applies RBAC. */
 export default function AdminRoutes() {
   return (
     <Routes>
@@ -47,10 +47,16 @@ export default function AdminRoutes() {
           <Route element={<RequirePermission permission={PERMISSIONS.ADMIN.ROLE.READ} />}>
             <Route path="roles/:roleId/view" element={<RoleCreatePage />} />
           </Route>
-          <Route path="sellers" element={<SellersPage />} />
-          <Route path="sellers/new" element={<SellerCreation />} />
-          <Route path="sellers/:sellerId/edit" element={<SellerCreation />} />
-          <Route path="sellers/:sellerId/view" element={<SellerDetails />} />
+          
+          <Route path="batches" element={<BatchesPage />} />
+          <Route path="daily-visits" element={<DailyVisitsPage />} />
+          <Route path="feed" element={<FeedPage />} />
+          <Route path="medicines" element={<MedicinesPage />} />
+          <Route path="areas" element={<AreasPage />} />
+          <Route path="farmers" element={<FarmersPage />} />
+          <Route path="farms" element={<FarmsPage />} />
+          <Route path="employees" element={<EmployeesPage />} />
+          
           {COMING_SOON_ROUTES.map(({ path, title }) => (
             <Route key={path} path={path} element={<ComingSoonPage title={title} />} />
           ))}

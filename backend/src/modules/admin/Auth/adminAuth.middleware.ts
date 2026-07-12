@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
 import type { Env } from "../../../core/env.js";
 import { AppError } from "../../../core/errors/AppError.js";
-import { prisma } from "../../../core/prisma.js";
+import { AdminUser } from "../models/index.js";
 import { asyncHandler } from "../../../core/http/asyncHandler.js";
 import {
   AdminAuthTokenError,
@@ -40,27 +40,20 @@ export function createAdminAuthMiddleware(env: Env) {
       if (!req.auth) {
         throw new AppError(401, "Unauthorized");
       }
-      const adminUser = await prisma.adminUser.findUnique({
-        where: { id: req.auth.userId },
-        include: {
-          role: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-              permissions: true,
-            },
-          },
-        },
-      });
+      const adminUser = await AdminUser.findById(req.auth.userId).populate("role");
 
       if (!adminUser || !adminUser.isActive || adminUser.deletedAt) {
         throw new AppError(403, "Forbidden");
       }
 
+      const roleObj = adminUser.role as any;
+      if (!roleObj) {
+        throw new AppError(403, "Forbidden");
+      }
+
       const allowed = hasPermission(
         {
-          role: { permissions: adminUser.role.permissions },
+          role: { permissions: roleObj.permissions },
         },
         permission
       );
@@ -73,9 +66,9 @@ export function createAdminAuthMiddleware(env: Env) {
         id: adminUser.id,
         email: adminUser.email,
         name: adminUser.name,
-        mobileNumber: adminUser.mobileNumber,
+        mobileNumber: adminUser.mobileNumber ?? null,
         isActive: adminUser.isActive,
-        role: adminUser.role,
+        role: roleObj,
       };
       next();
     });

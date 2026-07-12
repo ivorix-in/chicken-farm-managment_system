@@ -85,7 +85,7 @@ function alignClass(align: DataTableColumn<unknown>['align']) {
   return 'text-left';
 }
 
-export function paginationRange(
+function paginationRange(
   currentPage: number,
   pageCount: number
 ): (number | 'ellipsis')[] {
@@ -107,7 +107,7 @@ export function paginationRange(
 }
 
 /** Reference-style page list: 1 2 3 4 5 … last (when on early pages). */
-export function paginationRangeModern(
+function paginationRangeModern(
   currentPage: number,
   pageCount: number
 ): (number | 'ellipsis')[] {

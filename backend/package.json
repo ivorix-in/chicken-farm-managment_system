@@ -7,16 +7,12 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
-    "db:studio": "prisma studio",
+    "db:seed": "tsx src/cli/seed.ts",
     "admin:create": "tsx src/cli/create-admin.ts",
     "admin:super-role": "tsx src/cli/grant-super-admin-role.ts",
     "seller:create": "tsx src/cli/create-seller.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.6.0",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.6",
     "bcryptjs": "^3.0.3",
@@ -26,6 +22,7 @@
     "express-rate-limit": "^8.3.2",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mongoose": "^9.7.4",
     "morgan": "^1.10.0",
     "nodemailer": "^8.0.5",
     "react": "^19.2.5",
@@ -44,14 +41,10 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/swagger-ui-express": "^4.1.8",
-    "prisma": "^6.6.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
   },
   "engines": {
     "node": ">=20"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   }
 }

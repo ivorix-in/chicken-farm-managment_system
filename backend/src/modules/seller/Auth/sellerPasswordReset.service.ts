@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../../../core/prisma.js";
+import { Seller, SellerPasswordResetOtp } from "../models/index.js";
 import { AppError } from "../../../core/errors/AppError.js";
 import type { Env } from "../../../core/env.js";
 import { sendSellerPasswordResetOtpEmail } from "../../../core/email/mailer.js";
@@ -30,9 +30,7 @@ export async function requestSellerPasswordReset(
   const startedAt = Date.now();
   try {
     const email = normalizeEmail(input.email);
-    const seller = await prisma.seller.findUnique({
-      where: { email },
-    });
+    const seller = await Seller.findOne({ email });
 
     if (!seller) {
       return { message: GENERIC_PASSWORD_RESET_REQUEST_MESSAGE };
@@ -44,12 +42,10 @@ export async function requestSellerPasswordReset(
       Date.now() + env.PASSWORD_RESET_OTP_TTL_MINUTES * 60 * 1000
     );
 
-    await prisma.sellerPasswordResetOtp.create({
-      data: {
-        sellerId: seller.id,
-        otpHash,
-        expiresAt,
-      },
+    await SellerPasswordResetOtp.create({
+      sellerId: seller.id,
+      otpHash,
+      expiresAt,
     });
 
     const appPublicUrl =
@@ -89,22 +85,17 @@ export async function verifySellerPasswordResetOtp(
   const invalid = () =>
     new AppError(400, "Invalid or expired verification code", "RESET_INVALID");
 
-  const seller = await prisma.seller.findUnique({
-    where: { email },
-  });
+  const seller = await Seller.findOne({ email });
   if (!seller) {
     throw invalid();
   }
 
   const now = new Date();
-  const otpRow = await prisma.sellerPasswordResetOtp.findFirst({
-    where: {
-      sellerId: seller.id,
-      usedAt: null,
-      expiresAt: { gt: now },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const otpRow = await SellerPasswordResetOtp.findOne({
+    sellerId: seller.id,
+    usedAt: null,
+    expiresAt: { $gt: now },
+  }).sort({ createdAt: -1 });
 
   if (!otpRow || otpRow.attempts >= maxAttempts) {
     throw invalid();
@@ -112,9 +103,8 @@ export async function verifySellerPasswordResetOtp(
 
   const otpOk = await bcrypt.compare(input.otp, otpRow.otpHash);
   if (!otpOk) {
-    await prisma.sellerPasswordResetOtp.update({
-      where: { id: otpRow.id },
-      data: { attempts: { increment: 1 } },
+    await SellerPasswordResetOtp.findByIdAndUpdate(otpRow.id, {
+      $inc: { attempts: 1 },
     });
     throw invalid();
   }
@@ -138,22 +128,17 @@ export async function resetSellerPasswordWithOtp(
   const invalid = () =>
     new AppError(400, "Invalid or expired verification code", "RESET_INVALID");
 
-  const seller = await prisma.seller.findUnique({
-    where: { email },
-  });
+  const seller = await Seller.findOne({ email });
   if (!seller) {
     throw invalid();
   }
 
   const now = new Date();
-  const otpRow = await prisma.sellerPasswordResetOtp.findFirst({
-    where: {
-      sellerId: seller.id,
-      usedAt: null,
-      expiresAt: { gt: now },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const otpRow = await SellerPasswordResetOtp.findOne({
+    sellerId: seller.id,
+    usedAt: null,
+    expiresAt: { $gt: now },
+  }).sort({ createdAt: -1 });
 
   if (!otpRow || otpRow.attempts >= maxAttempts) {
     throw invalid();
@@ -161,25 +146,17 @@ export async function resetSellerPasswordWithOtp(
 
   const otpOk = await bcrypt.compare(input.otp, otpRow.otpHash);
   if (!otpOk) {
-    await prisma.sellerPasswordResetOtp.update({
-      where: { id: otpRow.id },
-      data: { attempts: { increment: 1 } },
+    await SellerPasswordResetOtp.findByIdAndUpdate(otpRow.id, {
+      $inc: { attempts: 1 },
     });
     throw invalid();
   }
 
   const password = await hashPassword(input.newPassword);
 
-  await prisma.$transaction([
-    prisma.seller.update({
-      where: { id: seller.id },
-      data: { password },
-    }),
-    prisma.sellerPasswordResetOtp.update({
-      where: { id: otpRow.id },
-      data: { usedAt: now },
-    }),
-  ]);
+  // Perform updates sequentially
+  await Seller.findByIdAndUpdate(seller.id, { password });
+  await SellerPasswordResetOtp.findByIdAndUpdate(otpRow.id, { usedAt: now });
 
   return {
     message: "Password has been reset. You can sign in with your new password.",

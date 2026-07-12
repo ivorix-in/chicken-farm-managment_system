@@ -1,5 +1,4 @@
-import type { Prisma } from "@prisma/client";
-import { prisma } from "../../../core/prisma.js";
+import { AdminRole, AdminUser } from "../models/index.js";
 import { AppError } from "../../../core/errors/AppError.js";
 
 function normalizeRoleCode(code: string): string {
@@ -8,14 +7,16 @@ function normalizeRoleCode(code: string): string {
 
 /** List roles with admin-assignment counts. */
 export async function listRoles() {
-  return prisma.adminRole.findMany({
-    orderBy: { name: "asc" },
-    include: {
-      _count: {
-        select: { adminUsers: true },
-      },
-    },
-  });
+  const roles = await AdminRole.find().sort({ name: "asc" });
+  return Promise.all(
+    roles.map(async (role) => {
+      const count = await AdminUser.countDocuments({ roleId: role.id });
+      return {
+        ...role.toObject(),
+        _count: { adminUsers: count },
+      };
+    })
+  );
 }
 
 /** Create role. Persists permissions as JSON array (or ["*"]). */
@@ -25,7 +26,7 @@ export async function createRole(input: {
   permissions: string[];
 }) {
   const code = normalizeRoleCode(input.code);
-  const existing = await prisma.adminRole.findUnique({ where: { code } });
+  const existing = await AdminRole.findOne({ code });
   if (existing) {
     throw new AppError(409, "Role code already exists");
   }
@@ -35,37 +36,36 @@ export async function createRole(input: {
       ? ["*"]
       : input.permissions.filter((p) => p.length > 0);
 
-  const role = await prisma.adminRole.create({
-    data: {
-      name: input.name.trim(),
-      code,
-      permissions: (perms.length ? perms : []) as Prisma.InputJsonValue,
-    },
+  const role = await AdminRole.create({
+    name: input.name.trim(),
+    code,
+    permissions: perms.length ? perms : [],
   });
 
-  return { ...role, _count: { adminUsers: 0 } };
+  return { ...role.toObject(), _count: { adminUsers: 0 } };
 }
 
 export async function updateRole(
   roleId: string,
   input: Partial<{ name: string; code: string; permissions: string[] }>
 ) {
-  const current = await prisma.adminRole.findUnique({ where: { id: roleId } });
+  const current = await AdminRole.findById(roleId);
   if (!current) {
     throw new AppError(404, "Role not found");
   }
 
   let code = input.code !== undefined ? normalizeRoleCode(input.code) : undefined;
   if (code !== undefined && code !== current.code) {
-    const taken = await prisma.adminRole.findFirst({
-      where: { code, NOT: { id: roleId } },
+    const taken = await AdminRole.findOne({
+      code,
+      _id: { $ne: roleId },
     });
     if (taken) {
       throw new AppError(409, "Role code already exists");
     }
   }
 
-  let permissions: unknown | undefined;
+  let permissions: string[] | undefined;
   if (input.permissions !== undefined) {
     const perms =
       input.permissions.includes("*") && input.permissions.length > 1
@@ -74,43 +74,33 @@ export async function updateRole(
     permissions = perms;
   }
 
-  const role = await prisma.adminRole.update({
-    where: { id: roleId },
-    data: {
-      ...(input.name !== undefined ? { name: input.name.trim() } : {}),
-      ...(code !== undefined ? { code } : {}),
-      ...(permissions !== undefined
-        ? { permissions: permissions as Prisma.InputJsonValue }
-        : {}),
-    },
-    include: {
-      _count: { select: { adminUsers: true } },
-    },
-  });
+  const updateData: any = {};
+  if (input.name !== undefined) updateData.name = input.name.trim();
+  if (code !== undefined) updateData.code = code;
+  if (permissions !== undefined) updateData.permissions = permissions;
 
-  return role;
+  const role = await AdminRole.findByIdAndUpdate(roleId, updateData, { new: true });
+  if (!role) {
+    throw new AppError(404, "Role not found");
+  }
+
+  const count = await AdminUser.countDocuments({ roleId });
+  return { ...role.toObject(), _count: { adminUsers: count } };
 }
 
 export async function deleteRole(roleId: string) {
-  const current = await prisma.adminRole.findUnique({
-    where: { id: roleId },
-    include: {
-      _count: { select: { adminUsers: true } },
-    },
-  });
-
+  const current = await AdminRole.findById(roleId);
   if (!current) {
     throw new AppError(404, "Role not found");
   }
 
-  if (current._count.adminUsers > 0) {
+  const count = await AdminUser.countDocuments({ roleId });
+  if (count > 0) {
     throw new AppError(
       409,
-      `Cannot delete role assigned to ${current._count.adminUsers} admin(s). Reassign them first.`
+      `Cannot delete role assigned to ${count} admin(s). Reassign them first.`
     );
   }
 
-  await prisma.adminRole.delete({
-    where: { id: roleId },
-  });
+  await AdminRole.findByIdAndDelete(roleId);
 }
