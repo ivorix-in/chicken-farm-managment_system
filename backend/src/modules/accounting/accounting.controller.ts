@@ -1,10 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
-import type { Env } from "../../../core/env.js";
+import type { Env } from "../../core/env.js";
 import { Transaction } from "./models/Transaction.js";
-import { createTransactionBody, listTransactionsQuery } from "./accounting.validator.js";
-import { HttpError } from "../../../core/errors.js";
+import { createTransactionBody, listTransactionsQuery, updateTransactionBody } from "./accounting.validator.js";
 
-export function createAccountingController(env: Env) {
+export function createAccountingController(_env: Env) {
   return {
     async create(req: Request, res: Response, next: NextFunction) {
       try {
@@ -89,6 +88,42 @@ export function createAccountingController(env: Env) {
             netProfit,
           },
         });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async update(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = req.params;
+        const body = updateTransactionBody.parse(req.body);
+        const transaction = await Transaction.findByIdAndUpdate(
+          id,
+          {
+            ...body,
+            ...(body.date && { date: new Date(body.date) }),
+          },
+          { new: true }
+        );
+        if (!transaction) {
+          res.status(404).json({ message: "Transaction not found" });
+          return;
+        }
+        res.json({ data: transaction });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async remove(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = req.params;
+        const transaction = await Transaction.findByIdAndDelete(id);
+        if (!transaction) {
+          res.status(404).json({ message: "Transaction not found" });
+          return;
+        }
+        res.json({ message: "Transaction deleted" });
       } catch (error) {
         next(error);
       }

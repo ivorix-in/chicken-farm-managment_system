@@ -9,7 +9,7 @@ export default function BatchesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: batches = [], isLoading } = useQuery({
     queryKey: ['batches'],
-    queryFn: fetchBatches,
+    queryFn: () => fetchBatches(),
   });
 
   return (

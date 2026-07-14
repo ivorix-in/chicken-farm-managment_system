@@ -7,6 +7,7 @@ import { Mail, Lock, ArrowRight, Loader2, Sparkles, Eye } from 'lucide-react';
 import { loginAdmin, setStoredToken, type AdminMe } from '../../Auth/api/adminAuthApi';
 import { adminMeQueryKey } from '../../Auth/hooks/useAdminSession';
 import { ROUTE_PATHS } from '../../../../config/routes';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ export default function LoginPage() {
     onSuccess: (data: { accessToken: string; admin: AdminMe }) => {
       setStoredToken(data.accessToken);
       queryClient.setQueryData(adminMeQueryKey, data.admin);
+      toast.success('Login successful. Welcome back!');
       const fallback = ROUTE_PATHS.ADMIN_DASHBOARD;
       const raw = (location.state as { from?: { pathname?: string } })?.from?.pathname;
       const dest = !raw || raw.includes('/login') ? fallback : raw;

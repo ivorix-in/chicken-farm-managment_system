@@ -9,6 +9,7 @@ import { fetchCollectionReports } from '../../CollectionReports/api/collectionRe
 import AddLogModal from '../components/AddLogModal';
 import BatchSummaryReport from '../components/BatchSummaryReport';
 import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 
 export default function BatchTrackingPage() {
   const { id } = useParams<{ id: string }>();
@@ -36,9 +37,20 @@ export default function BatchTrackingPage() {
 
   const handleStatusChange = (newStatus: 'PROGRESS' | 'COMPLETED' | 'CLOSED') => {
     if (newStatus === 'CLOSED') {
-      if (window.confirm('Are you sure you want to CLOSE this batch? This action is permanent and will lock all batch data.')) {
-        statusMutation.mutate(newStatus);
-      }
+      Swal.fire({
+        title: 'Are you sure?',
+        text: 'Are you sure you want to CLOSE this batch? This action is permanent and will lock all batch data.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, close batch',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          statusMutation.mutate(newStatus);
+        }
+      });
     } else {
       statusMutation.mutate(newStatus);
     }

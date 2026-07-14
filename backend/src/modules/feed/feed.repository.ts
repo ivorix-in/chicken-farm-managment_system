@@ -31,7 +31,13 @@ export async function findTransactions(filters: { batchId?: string; feedStockId?
   if (filters.type) query.type = filters.type;
   const skip = (page - 1) * limit;
   const [rows, total] = await Promise.all([
-    FeedTransaction.find(query).populate("feedStockId", "feedType").populate("issuedBy", "name email").sort({ issuedAt: -1 }).skip(skip).limit(limit),
+    FeedTransaction.find(query)
+      .populate("feedStockId", "feedType")
+      .populate("batchId", "batchNo")
+      .populate("issuedBy", "name email")
+      .sort({ issuedAt: -1 })
+      .skip(skip)
+      .limit(limit),
     FeedTransaction.countDocuments(query),
   ]);
   return { rows, total };

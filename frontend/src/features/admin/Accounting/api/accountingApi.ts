@@ -35,3 +35,12 @@ export async function fetchPnlSummary(): Promise<PnlSummary> {
   const { data } = await api.get<{ data: PnlSummary }>('/api/v1/admin/accounting/pnl/summary');
   return data.data;
 }
+
+export async function updateTransaction(id: string, payload: Partial<Transaction>): Promise<Transaction> {
+  const { data } = await api.put<{ data: Transaction }>(`/api/v1/admin/accounting/transactions/${id}`, payload);
+  return data.data;
+}
+
+export async function deleteTransaction(id: string): Promise<void> {
+  await api.delete(`/api/v1/admin/accounting/transactions/${id}`);
+}

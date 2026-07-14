@@ -23,3 +23,7 @@ export async function updateArea(id: string, area: Partial<Area>): Promise<Area>
   const { data } = await api.put<{ area: Area }>(`/api/v1/admin/areas/${id}`, area);
   return data.area;
 }
+
+export async function deleteArea(id: string): Promise<void> {
+  await api.delete(`/api/v1/admin/areas/${id}`);
+}

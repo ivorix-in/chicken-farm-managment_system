@@ -25,3 +25,7 @@ export async function updateVehicle(id: string, vehicle: Partial<Vehicle>): Prom
   const { data } = await api.put<{ vehicle: Vehicle }>(`/api/v1/admin/vehicles/${id}`, vehicle);
   return data.vehicle;
 }
+
+export async function deleteVehicle(id: string): Promise<void> {
+  await api.delete(`/api/v1/admin/vehicles/${id}`);
+}
