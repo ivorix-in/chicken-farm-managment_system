@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save, Send, Printer, Plus, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 
 import { fetchFarms } from '../../Farms/api/farmsApi';
 import { fetchVehicles } from '../../Vehicles/api/vehiclesApi';
@@ -215,9 +216,20 @@ export default function CollectionReportCreatePage() {
       errors.forEach(err => toast.error(err));
       return;
     }
-    if (window.confirm('Are you sure you want to SUBMIT this report? This will finalize details, update batch sales weight, and lock edits.')) {
-      submitMutation.mutate();
-    }
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to SUBMIT this report? This will finalize details, update batch sales weight, and lock edits.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#00A859',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, submit report',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        submitMutation.mutate();
+      }
+    });
   };
 
   if (isEditMode && isLoadingReport) {

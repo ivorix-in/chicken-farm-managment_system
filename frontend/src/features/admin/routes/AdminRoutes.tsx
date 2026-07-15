@@ -18,17 +18,18 @@ import AreasPage from '../Areas/pages/AreasPage';
 import FarmersPage from '../Farmers/pages/FarmersPage';
 import FarmsPage from '../Farms/pages/FarmsPage';
 import EmployeesPage from '../Employees/pages/EmployeesPage';
+import VehiclesPage from '../Vehicles/pages/VehiclesPage';
 
 import AccountingPage from '../Accounting/pages/AccountingPage';
 import PnlPage from '../Accounting/pages/PnlPage';
+import PurchasesPage from '../Accounting/pages/PurchasesPage';
+import SalesPage from '../Accounting/pages/SalesPage';
+import ExpensesPage from '../Accounting/pages/ExpensesPage';
 import CollectionReportsPage from '../CollectionReports/pages/CollectionReportsPage';
 import CollectionReportCreatePage from '../CollectionReports/pages/CollectionReportCreatePage';
 
 const COMING_SOON_ROUTES = [
   { path: 'accounts', title: 'Admin Accounts' },
-  { path: 'purchases', title: 'Purchases' },
-  { path: 'sales', title: 'Sales' },
-  { path: 'expenses', title: 'Expenses' },
   { path: 'settings', title: 'Settings' },
 ] as const;
 
@@ -67,8 +68,12 @@ export default function AdminRoutes() {
           <Route path="farmers" element={<FarmersPage />} />
           <Route path="farms" element={<FarmsPage />} />
           <Route path="employees" element={<EmployeesPage />} />
+          <Route path="vehicles" element={<VehiclesPage />} />
           <Route path="accounting" element={<AccountingPage />} />
           <Route path="pnl" element={<PnlPage />} />
+          <Route path="purchases" element={<PurchasesPage />} />
+          <Route path="sales" element={<SalesPage />} />
+          <Route path="expenses" element={<ExpensesPage />} />
           <Route path="collection-reports" element={<CollectionReportsPage />} />
           <Route path="collection-reports/new" element={<CollectionReportCreatePage />} />
           <Route path="collection-reports/:id/edit" element={<CollectionReportCreatePage />} />

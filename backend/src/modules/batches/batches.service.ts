@@ -63,13 +63,13 @@ export async function createBatch(input: CreateBatchInput, actorId: string, ip?:
     closedAt: null,
     chickPurchase: input.chickPurchase
       ? {
-          supplierId: input.chickPurchase.supplierId ?? null,
-          pricePerChick: input.chickPurchase.pricePerChick,
-          totalAmount: input.chickPurchase.totalAmount,
-          purchasedAt: new Date(input.chickPurchase.purchasedAt),
-          vendor: input.chickPurchase.vendor ?? null,
-          breed: input.chickPurchase.breed ?? null,
-        }
+        supplierId: input.chickPurchase.supplierId ?? null,
+        pricePerChick: input.chickPurchase.pricePerChick,
+        totalAmount: input.chickPurchase.totalAmount,
+        purchasedAt: new Date(input.chickPurchase.purchasedAt),
+        vendor: input.chickPurchase.vendor ?? null,
+        breed: input.chickPurchase.breed ?? null,
+      }
       : null,
   });
 

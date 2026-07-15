@@ -1,13 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { PackagePlus, Search, Package, AlertTriangle, ArrowRightLeft } from 'lucide-react';
 import { fetchFeedStock } from '../api/feedApi';
+import FeedTransactionCreateModal from '../components/FeedTransactionCreateModal';
+import FeedTransactionsHistoryModal from '../components/FeedTransactionsHistoryModal';
 
 export default function FeedPage() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [selectedFeedStockId, setSelectedFeedStockId] = useState<string | undefined>(undefined);
+  const [defaultType, setDefaultType] = useState<'ISSUE' | 'RETURN' | 'RESTOCK'>('ISSUE');
+
   const { data: feedStock = [], isLoading } = useQuery({
     queryKey: ['feed-stock'],
     queryFn: fetchFeedStock,
   });
+
+  const handleOpenCreate = (feedStockId?: string, type: 'ISSUE' | 'RETURN' | 'RESTOCK' = 'ISSUE') => {
+    setSelectedFeedStockId(feedStockId);
+    setDefaultType(type);
+    setIsCreateOpen(true);
+  };
+
+  const filteredFeedStock = feedStock.filter(s => 
+    s.feedType.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -23,11 +41,17 @@ export default function FeedPage() {
         </div>
         
         <div className="flex gap-2">
-          <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl transition-all">
+          <button
+            onClick={() => setIsHistoryOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl transition-all"
+          >
             <ArrowRightLeft size={16} />
             Transactions
           </button>
-          <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all">
+          <button
+            onClick={() => handleOpenCreate(undefined, 'ISSUE')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all"
+          >
             <PackagePlus size={16} />
             New Transaction
           </button>
@@ -42,6 +66,8 @@ export default function FeedPage() {
           </div>
           <input
             type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00A859]/20 focus:border-[#00A859] transition-all"
             placeholder="Search feed types..."
           />
@@ -49,13 +75,13 @@ export default function FeedPage() {
       </div>
 
       {/* Data Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
         {isLoading ? (
           <div className="col-span-full py-10 text-center text-gray-400 font-semibold">Loading feed inventory...</div>
-        ) : feedStock.length === 0 ? (
+        ) : filteredFeedStock.length === 0 ? (
           <div className="col-span-full py-10 text-center text-gray-400 font-semibold">No feed stock data available.</div>
         ) : (
-          feedStock.map((stock) => {
+          filteredFeedStock.map((stock) => {
             const isLow = stock.quantityKg <= stock.lowStockThresholdKg;
             return (
               <div key={stock.id} className={`bg-white rounded-2xl border ${isLow ? 'border-amber-200 bg-amber-50/20' : 'border-gray-100'} shadow-sm overflow-hidden flex flex-col`}>
@@ -87,19 +113,47 @@ export default function FeedPage() {
                     </div>
                     <div>
                       <p className="text-[10px] text-gray-400 font-semibold uppercase">Unit Cost</p>
-                      <p className="font-semibold text-gray-700">${stock.unitCostPerKg.toFixed(2)}/kg</p>
+                      <p className="font-semibold text-gray-700">₹{stock.unitCostPerKg.toFixed(2)}/kg</p>
                     </div>
                   </div>
                 </div>
                 <div className="p-4 bg-gray-50/50 border-t border-gray-50 flex gap-2">
-                  <button className="flex-1 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50">Restock</button>
-                  <button className="flex-1 py-2 bg-[#00A859] rounded-lg text-xs font-semibold text-white hover:bg-[#008F4B]">Issue</button>
+                  <button
+                    onClick={() => handleOpenCreate(stock.id, 'RESTOCK')}
+                    className="flex-1 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                  >
+                    Restock
+                  </button>
+                  <button
+                    onClick={() => handleOpenCreate(stock.id, 'ISSUE')}
+                    className="flex-1 py-2 bg-[#00A859] rounded-lg text-xs font-semibold text-white hover:bg-[#008F4B]"
+                  >
+                    Issue
+                  </button>
                 </div>
               </div>
             );
           })
         )}
       </div>
+
+      {/* Transaction Modals */}
+      {isCreateOpen && (
+        <FeedTransactionCreateModal
+          onClose={() => {
+            setIsCreateOpen(false);
+            setSelectedFeedStockId(undefined);
+          }}
+          defaultFeedStockId={selectedFeedStockId}
+          defaultType={defaultType}
+        />
+      )}
+
+      {isHistoryOpen && (
+        <FeedTransactionsHistoryModal
+          onClose={() => setIsHistoryOpen(false)}
+        />
+      )}
     </div>
   );
 }

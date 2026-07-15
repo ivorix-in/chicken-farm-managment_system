@@ -64,11 +64,11 @@ export const ADMIN_NAV_GROUPS: readonly AdminNavGroup[] = [
     id: 'accounts',
     title: 'Accounts & Finance',
     items: [
-      { id: 'accounting', label: 'Accounting', to: ROUTE_PATHS.ADMIN_ACCOUNTING, Icon: Calculator, comingSoon: true },
-      { id: 'purchases', label: 'Purchases', to: ROUTE_PATHS.ADMIN_PURCHASES, Icon: ShoppingCart, comingSoon: true },
-      { id: 'sales', label: 'Sales', to: ROUTE_PATHS.ADMIN_SALES, Icon: Receipt, comingSoon: true },
-      { id: 'expenses', label: 'Expenses', to: ROUTE_PATHS.ADMIN_EXPENSES, Icon: Wallet, comingSoon: true },
-      { id: 'pnl', label: 'Profit & Loss', to: ROUTE_PATHS.ADMIN_PNL, Icon: TrendingUp, comingSoon: true },
+      { id: 'accounting', label: 'Accounting', to: ROUTE_PATHS.ADMIN_ACCOUNTING, Icon: Calculator },
+      { id: 'purchases', label: 'Purchases', to: ROUTE_PATHS.ADMIN_PURCHASES, Icon: ShoppingCart },
+      { id: 'sales', label: 'Sales', to: ROUTE_PATHS.ADMIN_SALES, Icon: Receipt },
+      { id: 'expenses', label: 'Expenses', to: ROUTE_PATHS.ADMIN_EXPENSES, Icon: Wallet },
+      { id: 'pnl', label: 'Profit & Loss', to: ROUTE_PATHS.ADMIN_PNL, Icon: TrendingUp },
     ],
   },
   {

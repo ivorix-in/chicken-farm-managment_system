@@ -8,7 +8,7 @@ export interface Farm {
   supervisorId?: string;
   areaId?: string;
   capacity: number;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
   createdAt: string;
 }
 
@@ -25,4 +25,8 @@ export async function createFarm(farm: Partial<Farm>): Promise<Farm> {
 export async function updateFarm(id: string, farm: Partial<Farm>): Promise<Farm> {
   const { data } = await api.put<{ farm: Farm }>(`/api/v1/admin/farms/${id}`, farm);
   return data.farm;
+}
+
+export async function deleteFarm(id: string): Promise<void> {
+  await api.delete(`/api/v1/admin/farms/${id}`);
 }

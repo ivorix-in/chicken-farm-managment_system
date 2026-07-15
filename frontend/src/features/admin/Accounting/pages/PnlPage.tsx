@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, IndianRupee } from 'lucide-react';
 import { fetchPnlSummary } from '../api/accountingApi';
 
 export default function PnlPage() {
@@ -10,7 +10,7 @@ export default function PnlPage() {
   });
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-8 max-w-7xl mx-auto text-left">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Profit & Loss Report</h1>
         <p className="text-sm text-gray-500 mt-1">
@@ -31,7 +31,7 @@ export default function PnlPage() {
               <h2 className="text-lg font-semibold text-gray-600">Total Income</h2>
             </div>
             <p className="text-3xl font-bold text-gray-900 mt-4">
-              ${summary?.income?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+              ₹{summary?.income?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
             </p>
           </div>
 
@@ -44,7 +44,7 @@ export default function PnlPage() {
               <h2 className="text-lg font-semibold text-gray-600">Total Expenses</h2>
             </div>
             <p className="text-3xl font-bold text-gray-900 mt-4">
-              ${summary?.expenses?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+              ₹{summary?.expenses?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
             </p>
           </div>
 
@@ -52,12 +52,12 @@ export default function PnlPage() {
           <div className={`bg-white rounded-2xl p-6 border ${summary?.netProfit && summary.netProfit >= 0 ? 'border-green-200 bg-green-50/20' : 'border-red-200 bg-red-50/20'} shadow-sm flex flex-col justify-between`}>
             <div className={`flex items-center gap-4 ${summary?.netProfit && summary.netProfit >= 0 ? 'text-[#00A859]' : 'text-red-500'}`}>
               <div className={`p-3 rounded-xl ${summary?.netProfit && summary.netProfit >= 0 ? 'bg-[#E6F8ED]' : 'bg-red-50'}`}>
-                <DollarSign size={24} />
+                <IndianRupee size={24} />
               </div>
               <h2 className="text-lg font-semibold text-gray-600">Net Profit</h2>
             </div>
             <p className={`text-3xl font-bold mt-4 ${summary?.netProfit && summary.netProfit >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
-              ${summary?.netProfit?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+              ₹{summary?.netProfit?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
             </p>
           </div>
         </div>

@@ -1,16 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, ClipboardList, Eye } from 'lucide-react';
+import { Plus, Search, ClipboardList, AlertTriangle } from 'lucide-react';
 import { fetchDailyVisits } from '../api/dailyVisitsApi';
+import { fetchBatches } from '../../Batches/api/batchesApi';
+import DailyVisitCreateModal from '../components/DailyVisitCreateModal';
 
 export default function DailyVisitsPage() {
-  const { data: visits = [], isLoading } = useQuery({
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const { data: visits = [], isLoading: isLoadingVisits } = useQuery({
     queryKey: ['daily-visits'],
     queryFn: fetchDailyVisits,
   });
 
+  const { data: batches = [], isLoading: isLoadingBatches } = useQuery({
+    queryKey: ['batches'],
+    queryFn: () => fetchBatches(),
+  });
+
+  // Map batches by ID for quick lookups
+  const batchMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    batches.forEach((b) => {
+      map.set(b.id, b.batchNo);
+    });
+    return map;
+  }, [batches]);
+
+  const filteredVisits = visits.filter((visit) => {
+    const batchNo = batchMap.get(visit.batchId) || visit.batchId;
+    return batchNo.toLowerCase().includes(searchTerm.trim().toLowerCase());
+  });
+
+  const isLoading = isLoadingVisits || isLoadingBatches;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-left">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
         <div>
@@ -22,7 +48,10 @@ export default function DailyVisitsPage() {
           </p>
         </div>
         
-        <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all"
+        >
           <Plus size={16} />
           Log Visit
         </button>
@@ -36,8 +65,10 @@ export default function DailyVisitsPage() {
           </div>
           <input
             type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00A859]/20 focus:border-[#00A859] transition-all"
-            placeholder="Search by batch ID..."
+            placeholder="Search by batch number..."
           />
         </div>
       </div>
@@ -48,47 +79,54 @@ export default function DailyVisitsPage() {
           <table className="w-full text-sm text-left">
             <thead>
               <tr className="bg-gray-50 text-gray-500 font-semibold border-b border-gray-100 uppercase text-[10px] tracking-wider">
-                <th className="px-6 py-4">Batch ID</th>
+                <th className="px-6 py-4">Batch Number</th>
                 <th className="px-6 py-4">Date</th>
                 <th className="px-6 py-4 text-center">Mortality Today</th>
                 <th className="px-6 py-4 text-center">Feed Used (kg)</th>
-                <th className="px-6 py-4 text-center">Avg Weight (g)</th>
-                <th className="px-6 py-4">Supervisor</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-6 py-4 text-center">Avg Weight (kg)</th>
+                <th className="px-6 py-4">Status / Alert</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-400">Loading visits...</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-400">Loading visits...</td>
                 </tr>
-              ) : visits.length === 0 ? (
+              ) : filteredVisits.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-400">No daily visits recorded yet.</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-400">No daily visits recorded yet.</td>
                 </tr>
               ) : (
-                visits.map((visit) => (
-                  <tr key={visit.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-gray-900">{visit.batchId.substring(0, 8)}...</td>
-                    <td className="px-6 py-4 text-gray-500 font-medium">
-                      {new Date(visit.visitDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-center font-bold text-red-500">{visit.mortalityToday}</td>
-                    <td className="px-6 py-4 text-center font-semibold text-gray-700">{visit.feedUsedKg ?? '-'}</td>
-                    <td className="px-6 py-4 text-center font-semibold text-gray-700">{visit.approxWeightKg ?? '-'}</td>
-                    <td className="px-6 py-4 text-gray-500 font-medium">{visit.supervisorId.substring(0, 8)}</td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details">
-                        <Eye size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                filteredVisits.map((visit) => {
+                  const batchNo = batchMap.get(visit.batchId) || visit.batchId.substring(0, 8) + '...';
+                  return (
+                    <tr key={visit.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-gray-900">{batchNo}</td>
+                      <td className="px-6 py-4 text-gray-500 font-medium">
+                        {new Date(visit.visitDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-center font-bold text-red-500">{visit.mortalityToday}</td>
+                      <td className="px-6 py-4 text-center font-semibold text-gray-700">{visit.feedUsedKg ?? '-'}</td>
+                      <td className="px-6 py-4 text-center font-semibold text-gray-700">{visit.approxWeightKg ?? '-'}</td>
+                      <td className="px-6 py-4 text-gray-500 font-medium">
+                        {visit.notifyDoctor ? (
+                          <span className="inline-flex items-center gap-1 text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded text-xs">
+                            <AlertTriangle size={14} /> Doctor Flagged
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">Normal</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {isModalOpen && <DailyVisitCreateModal onClose={() => setIsModalOpen(false)} />}
     </div>
   );
 }

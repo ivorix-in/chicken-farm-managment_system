@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   LogOut,
   Sprout,
@@ -24,6 +25,7 @@ export default function Sidebar({ onClose, collapsed }: SidebarProps) {
 
   const handleSignOut = () => {
     logout();
+    toast.success('Logged out successfully.');
     navigate(ROUTE_PATHS.ADMIN_LOGIN, { replace: true });
   };
 

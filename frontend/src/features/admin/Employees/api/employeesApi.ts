@@ -25,3 +25,7 @@ export async function updateEmployee(id: string, employee: Partial<Employee>): P
   const { data } = await api.put<{ employee: Employee }>(`/api/v1/admin/employees/${id}`, employee);
   return data.employee;
 }
+
+export async function deleteEmployee(id: string): Promise<void> {
+  await api.delete(`/api/v1/admin/employees/${id}`);
+}

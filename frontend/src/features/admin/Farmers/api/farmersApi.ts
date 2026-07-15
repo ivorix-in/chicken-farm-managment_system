@@ -23,3 +23,7 @@ export async function updateFarmer(id: string, farmer: Partial<Farmer>): Promise
   const { data } = await api.put<{ farmer: Farmer }>(`/api/v1/admin/farmers/${id}`, farmer);
   return data.farmer;
 }
+
+export async function deleteFarmer(id: string): Promise<void> {
+  await api.delete(`/api/v1/admin/farmers/${id}`);
+}
