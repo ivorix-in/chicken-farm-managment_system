@@ -101,7 +101,10 @@ export async function createCollectionReport(
 
   const batch = await findBatchById(input.batchId);
   if (!batch) throw new AppError(404, "Batch not found");
-  if (batch.farmId !== input.farmId) {
+  const batchFarmId = typeof batch.farmId === "object" && batch.farmId 
+    ? (batch.farmId as any)._id || (batch.farmId as any).id 
+    : batch.farmId;
+  if (batchFarmId !== input.farmId) {
     throw new AppError(400, "Selected batch does not belong to this farm");
   }
   if (batch.status === "CLOSED") {

@@ -9,18 +9,20 @@ interface FeedTransactionCreateModalProps {
   onClose: () => void;
   defaultFeedStockId?: string;
   defaultType?: 'ISSUE' | 'RETURN' | 'RESTOCK';
+  defaultBatchId?: string;
 }
 
 export default function FeedTransactionCreateModal({
   onClose,
   defaultFeedStockId,
   defaultType = 'ISSUE',
+  defaultBatchId,
 }: FeedTransactionCreateModalProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     feedStockId: defaultFeedStockId || '',
     type: defaultType,
-    batchId: '',
+    batchId: defaultBatchId || '',
     quantityKg: '',
     numberOfBags: '',
     category: 'GODOWN' as 'GODOWN' | 'TMS_IN' | 'RETURN' | 'TRANSFER_OUT' | 'CONSUMPTION',
@@ -63,6 +65,8 @@ export default function FeedTransactionCreateModal({
       toast.success('Feed transaction logged successfully.');
       queryClient.invalidateQueries({ queryKey: ['feed-stock'] });
       queryClient.invalidateQueries({ queryKey: ['feed-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['batchFeed'] });
+      queryClient.invalidateQueries({ queryKey: ['batchSummary'] });
       onClose();
     },
     onError: (err: any) => {

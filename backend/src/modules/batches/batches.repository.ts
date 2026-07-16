@@ -15,7 +15,14 @@ export async function findBatches(filters: BatchFilters, page: number, limit: nu
   const skip = (page - 1) * limit;
   const [rows, total] = await Promise.all([
     Batch.find(query)
-      .populate("farmId", "name address capacity")
+      .populate({
+        path: "farmId",
+        select: "name address capacity farmerId",
+        populate: {
+          path: "farmerId",
+          select: "name phone"
+        }
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -25,7 +32,14 @@ export async function findBatches(filters: BatchFilters, page: number, limit: nu
 }
 
 export async function findBatchById(id: string) {
-  return Batch.findById(id).populate("farmId", "name address capacity farmerId supervisorId");
+  return Batch.findById(id).populate({
+    path: "farmId",
+    select: "name address capacity farmerId supervisorId",
+    populate: {
+      path: "farmerId",
+      select: "name phone"
+    }
+  });
 }
 
 export async function findActiveBatchForFarm(farmId: string) {

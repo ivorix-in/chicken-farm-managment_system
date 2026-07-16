@@ -30,7 +30,7 @@ export async function findCollectionReportById(id: string) {
   return CollectionReport.findById(id)
     .populate("farmId", "name address capacity")
     .populate("vehicleId", "vehicleNo driverName model")
-    .populate("batchId", "batchNo chickCount status");
+    .populate("batchId", "batchNo chickCount status currentBirdCount");
 }
 
 export async function createCollectionReportRecord(data: Partial<ICollectionReport>) {
@@ -41,7 +41,7 @@ export async function updateCollectionReportRecord(id: string, data: Partial<ICo
   return CollectionReport.findByIdAndUpdate(id, data, { new: true })
     .populate("farmId", "name address capacity")
     .populate("vehicleId", "vehicleNo driverName model")
-    .populate("batchId", "batchNo chickCount status");
+    .populate("batchId", "batchNo chickCount status currentBirdCount");
 }
 
 export async function deleteCollectionReportRecord(id: string) {

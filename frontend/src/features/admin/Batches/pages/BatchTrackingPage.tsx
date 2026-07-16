@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Activity, Users, AlertTriangle, Scale, ShoppingBag, Plus, MapPin, Calendar, CheckCircle2, ChevronDown, Truck, Eye, FileEdit } from 'lucide-react';
+import { ArrowLeft, Activity, Users, User, AlertTriangle, Scale, ShoppingBag, Plus, MapPin, Calendar, CheckCircle2, ChevronDown, Truck, Eye, FileEdit } from 'lucide-react';
 import { fetchBatchSummary, fetchBatch, updateBatch, closeBatch } from '../api/batchesApi';
 import { fetchBatchVisits } from '../../DailyVisits/api/dailyVisitsApi';
 import { fetchFeedTransactions } from '../../Feed/api/feedApi';
 import { fetchCollectionReports } from '../../CollectionReports/api/collectionReportsApi';
 import AddLogModal from '../components/AddLogModal';
 import BatchSummaryReport from '../components/BatchSummaryReport';
+import FeedTransactionCreateModal from '../../Feed/components/FeedTransactionCreateModal';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
 
 export default function BatchTrackingPage() {
   const { id } = useParams<{ id: string }>();
   const [isAddLogOpen, setIsAddLogOpen] = useState(false);
+  const [isAddFeedOpen, setIsAddFeedOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const statusMutation = useMutation({
@@ -147,6 +149,16 @@ export default function BatchTrackingPage() {
                 </span>
               </div>
               <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
+                <User size={16} className="text-gray-400" />
+                <span className="font-medium text-gray-700">
+                  Farmer: {typeof batch.farmId === 'object' && batch.farmId && (batch.farmId as any).farmerId 
+                    ? (typeof (batch.farmId as any).farmerId === 'object' 
+                        ? (batch.farmId as any).farmerId.name 
+                        : String((batch.farmId as any).farmerId).substring(0, 8))
+                    : 'N/A'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
                 <Calendar size={16} className="text-gray-400" />
                 <span className="font-medium text-gray-700">
                   Placed: {new Date(batch.startDate || (batch as any).placementDate).toLocaleDateString()}
@@ -155,14 +167,25 @@ export default function BatchTrackingPage() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setIsAddLogOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all whitespace-nowrap"
-          >
-            <Plus size={16} />
-            Add Daily Log
-          </button>
+        <div className="flex gap-2 flex-wrap">
+          {summary.status !== 'CLOSED' && (
+            <>
+              <button
+                onClick={() => setIsAddLogOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A859] hover:bg-[#008F4B] text-white text-sm font-semibold rounded-xl shadow-sm transition-all whitespace-nowrap"
+              >
+                <Plus size={16} />
+                Add Daily Log
+              </button>
+              <button
+                onClick={() => setIsAddFeedOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-all whitespace-nowrap"
+              >
+                <Plus size={16} />
+                Add Feed Allocation
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -177,6 +200,16 @@ export default function BatchTrackingPage() {
               <div className="flex justify-between border-b border-gray-50 pb-2">
                 <span className="text-gray-500">Farm Name</span>
                 <span className="font-semibold text-gray-900">{typeof batch.farmId === 'object' && batch.farmId ? (batch.farmId as any).name : 'Unknown Farm'}</span>
+              </div>
+              <div className="flex justify-between border-b border-gray-50 pb-2">
+                <span className="text-gray-500">Farmer Name</span>
+                <span className="font-semibold text-gray-900">
+                  {typeof batch.farmId === 'object' && batch.farmId && (batch.farmId as any).farmerId 
+                    ? (typeof (batch.farmId as any).farmerId === 'object' 
+                        ? (batch.farmId as any).farmerId.name 
+                        : String((batch.farmId as any).farmerId).substring(0, 8))
+                    : 'N/A'}
+                </span>
               </div>
               <div className="flex justify-between border-b border-gray-50 pb-2">
                 <span className="text-gray-500">Address</span>
@@ -218,7 +251,7 @@ export default function BatchTrackingPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 print:hidden">
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Users size={20} /></div>
           <div>
@@ -232,6 +265,14 @@ export default function BatchTrackingPage() {
           <div>
             <p className="text-xs text-gray-500 font-medium">Total Mortality</p>
             <p className="text-lg font-bold text-red-600">{summary.totalMortality.toLocaleString()} birds</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-teal-50 text-teal-600 rounded-xl"><Truck size={20} /></div>
+          <div>
+            <p className="text-xs text-gray-500 font-medium">Collected Birds</p>
+            <p className="text-lg font-bold text-gray-900">{summary.soldBirds.toLocaleString()} birds</p>
           </div>
         </div>
 
@@ -263,10 +304,18 @@ export default function BatchTrackingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:hidden">
         {/* Detailed Logs Table */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-gray-100">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <Activity className="text-blue-500" size={20} /> Daily Logs
             </h2>
+            {summary.status !== 'CLOSED' && (
+              <button
+                onClick={() => setIsAddLogOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all"
+              >
+                <Plus size={14} /> Add Log
+              </button>
+            )}
           </div>
           <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
             <table className="w-full text-sm text-left">
@@ -304,10 +353,18 @@ export default function BatchTrackingPage() {
 
         {/* Feed Transactions Table */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-gray-100">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <CheckCircle2 className="text-orange-500" size={20} /> Feed Allocations
             </h2>
+            {summary.status !== 'CLOSED' && (
+              <button
+                onClick={() => setIsAddFeedOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition-all"
+              >
+                <Plus size={14} /> Add Allocation
+              </button>
+            )}
           </div>
           <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
             <table className="w-full text-sm text-left">
@@ -421,6 +478,13 @@ export default function BatchTrackingPage() {
 
       {isAddLogOpen && (
         <AddLogModal batchId={id!} onClose={() => setIsAddLogOpen(false)} />
+      )}
+      {isAddFeedOpen && (
+        <FeedTransactionCreateModal 
+          onClose={() => setIsAddFeedOpen(false)} 
+          defaultBatchId={id} 
+          defaultType="ISSUE" 
+        />
       )}
     </div>
   );

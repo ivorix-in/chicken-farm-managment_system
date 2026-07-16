@@ -6,6 +6,8 @@ export interface Batch {
   farmId: string;
   status: 'PROGRESS' | 'COMPLETED' | 'CLOSED';
   startDate: string;
+  chickCount: number;
+  currentBirdCount: number;
   chickPurchase?: {
     supplier: string;
     quantity: number;

@@ -53,6 +53,9 @@ export default function CollectionReportCreatePage() {
 
   const isSubmitted = report?.status === 'SUBMITTED';
 
+  const selectedBatch = activeBatches.find(b => b.id === batchId) || 
+    (isEditMode && report && typeof report.batchId === 'object' && report.batchId ? report.batchId as any : null);
+
   // Load report data on edit/view mode
   useEffect(() => {
     if (report) {
@@ -536,6 +539,36 @@ export default function CollectionReportCreatePage() {
               </div>
             </div>
           </div>
+
+          {/* Batch Impact Panel */}
+          {selectedBatch && !isSubmitted && (
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4 print:hidden animate-in fade-in slide-in-from-bottom-3 duration-200">
+              <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                <AlertCircle className="text-[#00A859]" size={16} /> Batch Impact Estimation
+              </h2>
+              <div className="space-y-3 text-sm font-medium text-gray-600">
+                <div className="flex justify-between">
+                  <span>Batch Current Birds:</span>
+                  <span className="font-bold text-gray-900">{selectedBatch.currentBirdCount?.toLocaleString() || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>To Be Collected:</span>
+                  <span className="font-bold text-orange-600">- {totalChickens.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between border-t border-gray-150 pt-2 font-bold text-gray-950">
+                  <span>Estimated Remaining:</span>
+                  <span className={`text-base ${(selectedBatch.currentBirdCount || 0) - totalChickens < 0 ? 'text-red-600 font-bold' : 'text-[#00A859]'}`}>
+                    {Math.max(0, (selectedBatch.currentBirdCount || 0) - totalChickens).toLocaleString()}
+                  </span>
+                </div>
+                {(selectedBatch.currentBirdCount || 0) - totalChickens < 0 && (
+                  <div className="p-2.5 text-xs text-red-600 bg-red-50/50 rounded-lg border border-red-100 mt-2 font-semibold">
+                    Warning: Collection count exceeds remaining birds in batch!
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

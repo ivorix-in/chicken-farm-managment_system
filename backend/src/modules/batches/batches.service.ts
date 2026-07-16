@@ -124,7 +124,10 @@ export async function closeBatch(id: string, actorId: string, ip?: string) {
 
   await updateBatchRecord(id, { status: "CLOSED", closedAt: new Date() });
   // Clear farm's current batch reference
-  await updateFarmRecord(batch.farmId as string, { currentBatchId: null, status: "INACTIVE" } as any);
+  const farmId = typeof batch.farmId === "object" && batch.farmId 
+    ? (batch.farmId as any)._id || (batch.farmId as any).id 
+    : batch.farmId;
+  await updateFarmRecord(farmId as string, { currentBatchId: null, status: "INACTIVE" } as any);
 
   logAction({ userId: actorId, action: "close", entity: "Batch", entityId: id, ip });
   return { message: "Batch closed successfully" };
