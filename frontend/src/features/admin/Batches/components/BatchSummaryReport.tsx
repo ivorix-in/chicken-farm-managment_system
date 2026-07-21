@@ -21,13 +21,12 @@ export default function BatchSummaryReport({
   const totalMortalityPercent = ((summary.totalMortality / summary.chickCount) * 100).toFixed(2);
   const excessShortage = summary.chickCount - summary.totalMortality - summary.totalCulls - summary.totalOwnUse - summary.soldBirds - summary.currentBirdCount;
   
-  const fcr = summary.totalKgsSold > 0 ? (summary.totalFeedUsedKg / summary.totalKgsSold).toFixed(2) : '-';
-
   // Aggregate Feed Details
   let godownQty = 0, godownBags = 0;
   let tmsInQty = 0, tmsInBags = 0;
   let returnQty = 0, returnBags = 0;
   let transferOutQty = 0, transferOutBags = 0;
+  let consumptionQty = 0, consumptionBags = 0;
 
   feedTransactions.forEach(tx => {
     if (tx.category === 'GODOWN') {
@@ -42,8 +41,14 @@ export default function BatchSummaryReport({
     } else if (tx.category === 'TRANSFER_OUT') {
       transferOutQty += tx.quantityKg;
       transferOutBags += tx.numberOfBags;
+    } else if (tx.category === 'CONSUMPTION' || !tx.category) {
+      consumptionQty += tx.quantityKg;
+      consumptionBags += tx.numberOfBags;
     }
   });
+
+  const totalReconciledFeedKg = godownQty + tmsInQty + consumptionQty - returnQty - transferOutQty;
+  const fcr = summary.totalKgsSold > 0 ? (totalReconciledFeedKg / summary.totalKgsSold).toFixed(2) : '-';
 
   const handlePrint = () => {
     window.print();
@@ -197,6 +202,11 @@ export default function BatchSummaryReport({
                   <td className="py-3 px-4 text-right font-semibold text-gray-900">{tmsInBags.toLocaleString()}</td>
                 </tr>
                 <tr className="hover:bg-gray-50/50 transition-colors">
+                  <td className="py-3 px-4 font-medium text-gray-700">Direct Consumption</td>
+                  <td className="py-3 px-4 text-right font-semibold text-gray-900">{consumptionQty.toLocaleString()} kg</td>
+                  <td className="py-3 px-4 text-right font-semibold text-gray-900">{consumptionBags.toLocaleString()}</td>
+                </tr>
+                <tr className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-3 px-4 font-medium text-gray-700">Return Feed</td>
                   <td className="py-3 px-4 text-right font-semibold text-red-600">-{returnQty.toLocaleString()} kg</td>
                   <td className="py-3 px-4 text-right font-semibold text-red-600">-{returnBags.toLocaleString()}</td>
@@ -210,9 +220,9 @@ export default function BatchSummaryReport({
               <tfoot>
                 <tr className="bg-gray-50 font-bold border-t border-gray-100">
                   <td className="py-4 px-4 text-gray-800 uppercase text-xs tracking-wider">Total Reconciled Feed Consumption</td>
-                  <td className="py-4 px-4 text-right text-base text-emerald-600 font-extrabold">{summary.totalFeedUsedKg.toLocaleString()} kg</td>
+                  <td className="py-4 px-4 text-right text-base text-emerald-600 font-extrabold">{totalReconciledFeedKg.toLocaleString()} kg</td>
                   <td className="py-4 px-4 text-right text-base text-gray-900 font-extrabold">
-                    {godownBags + tmsInBags - returnBags - transferOutBags} bags
+                    {godownBags + tmsInBags + consumptionBags - returnBags - transferOutBags} bags
                   </td>
                 </tr>
               </tfoot>

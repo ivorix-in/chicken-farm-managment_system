@@ -60,7 +60,12 @@ export async function sumFeedUsedForBatch(batchId: string): Promise<number> {
         total: {
           $sum: {
             $cond: [
-              { $eq: ["$type", "ISSUE"] },
+              {
+                $and: [
+                  { $eq: ["$type", "ISSUE"] },
+                  { $ne: ["$category", "TRANSFER_OUT"] },
+                ],
+              },
               "$quantityKg",
               { $subtract: [0, "$quantityKg"] },
             ],

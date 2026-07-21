@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Activity, Users, User, AlertTriangle, Scale, ShoppingBag, Plus, MapPin, Calendar, CheckCircle2, ChevronDown, Truck, Eye, FileEdit } from 'lucide-react';
@@ -16,6 +16,7 @@ export default function BatchTrackingPage() {
   const { id } = useParams<{ id: string }>();
   const [isAddLogOpen, setIsAddLogOpen] = useState(false);
   const [isAddFeedOpen, setIsAddFeedOpen] = useState(false);
+  const [animatedWidth, setAnimatedWidth] = useState(0);
   const queryClient = useQueryClient();
 
   const statusMutation = useMutation({
@@ -92,6 +93,20 @@ export default function BatchTrackingPage() {
     }),
   });
 
+  const TARGET_DAYS = 40;
+  const progressPercent = summary 
+    ? Math.min((summary.currentAgeDays / TARGET_DAYS) * 100, 100) 
+    : 0;
+
+  useEffect(() => {
+    if (summary) {
+      const timer = setTimeout(() => {
+        setAnimatedWidth(progressPercent);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [summary, progressPercent]);
+
   if (loadingBatch || loadingSummary || loadingVisits || loadingFeed || loadingCollections) {
     return <div className="p-8 text-center text-gray-500">Loading batch details...</div>;
   }
@@ -99,9 +114,6 @@ export default function BatchTrackingPage() {
   if (!summary || !batch) {
     return <div className="p-8 text-center text-red-500">Failed to load batch summary.</div>;
   }
-
-  const TARGET_DAYS = 40;
-  const progressPercent = Math.min((summary.currentAgeDays / TARGET_DAYS) * 100, 100);
 
   return (
     <div className="space-y-6 print:space-y-0">
@@ -237,11 +249,14 @@ export default function BatchTrackingPage() {
             <h2 className="text-lg font-bold text-gray-900">Growth Progress</h2>
             <span className="text-sm font-semibold text-[#00A859]">Day {summary.currentAgeDays} of {TARGET_DAYS}</span>
           </div>
-          <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden">
+          <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner">
             <div 
-              className="absolute top-0 left-0 h-full bg-[#00A859] transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#00A859] to-[#34D399] transition-all duration-[1000ms] ease-out rounded-full relative overflow-hidden"
+              style={{ width: `${animatedWidth}%` }}
+            >
+              {/* Shimmer overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer" />
+            </div>
           </div>
           <div className="flex justify-between mt-2 text-xs font-semibold text-gray-400">
             <span>Day 0 (Placement)</span>
@@ -382,12 +397,22 @@ export default function BatchTrackingPage() {
                     <td colSpan={4} className="px-6 py-8 text-center text-gray-400">No feed allocations found.</td>
                   </tr>
                 ) : (
-                  feedTransactions.slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx) => (
+                  feedTransactions.slice().sort((a, b) => {
+                    const dateA = a.issuedAt ? new Date(a.issuedAt).getTime() : 0;
+                    const dateB = b.issuedAt ? new Date(b.issuedAt).getTime() : 0;
+                    return dateB - dateA;
+                  }).map((tx) => (
                     <tr key={tx.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap">{new Date(tx.date).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap">
+                        {tx.issuedAt ? new Date(tx.issuedAt).toLocaleDateString() : '-'}
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold ${
-                          tx.type === 'IN' ? 'bg-[#E6F8ED] text-[#00A859]' : 'bg-red-50 text-red-600'
+                          tx.type === 'ISSUE'
+                            ? 'bg-[#E6F8ED] text-[#00A859]'
+                            : tx.type === 'RETURN'
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-blue-50 text-blue-700'
                         }`}>
                           {tx.type}
                         </span>
